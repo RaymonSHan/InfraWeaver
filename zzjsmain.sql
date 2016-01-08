@@ -1,4 +1,3 @@
-# -*- coding:utf-8 -*-
 
 CREATE TABLE IF NOT EXISTS `zzjs_main`.`SystemClass` (
     `idClass` INT(11) UNSIGNED NOT NULL,
@@ -67,4 +66,9 @@ INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
 (200101, 'idCertificate', '机构代码证'),
 (200102, 'idCertificate', '税务登记号');
 
-
+DELIMITER $
+CREATE PROCEDURE `getvalueinto3`(in idc int, out idd int)
+BEGIN
+set idd = 67;
+select idd;
+END $
