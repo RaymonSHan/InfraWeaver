@@ -1,57 +1,66 @@
 
-CREATE TABLE IF NOT EXISTS `zzjs_main`.`SystemClass` (
-    `idClass` INT(11) UNSIGNED NOT NULL,
-    `valueClass` VARCHAR(256) NULL,
-    `startClass` INT(11) UNSIGNED NOT NULL,
-    PRIMARY KEY (`idClass`)
-)  COMMENT='类别信息表';
+CREATE TABLE IF NOT EXISTS `SystemClass` (
+  `idClass` INT(11) UNSIGNED NOT NULL,
+  `valueClass` VARCHAR(256) NULL,
+  `startClass` INT(11) UNSIGNED NOT NULL,
+  PRIMARY KEY (`idClass`))
+COMMENT='类别信息表';
 
-CREATE TABLE IF NOT EXISTS `zzjs_main`.`SystemField` (
-    `idField` INT(11) UNSIGNED NOT NULL,
-    `descField` VARCHAR(32) NOT NULL,
-    `valueField` VARCHAR(256) NOT NULL,
-    PRIMARY KEY (`idField`)
-)  COMMENT='属性信息表';
+CREATE TABLE IF NOT EXISTS `SystemField` (
+  `idField` INT(11) UNSIGNED NOT NULL,
+  `descField` VARCHAR(32) NOT NULL,
+  `valueField` VARCHAR(256) NOT NULL,
+  PRIMARY KEY (`idField`))
+COMMENT='属性信息表';
 
-CREATE TABLE IF NOT EXISTS `zzjs_main`.`BasePerson` (
-    `idPerson` INT(11) UNSIGNED NOT NULL,
-    `idClass` INT(11) UNSIGNED NOT NULL,
-    PRIMARY KEY (`idPerson`)
-)  COMMENT='权益人信息基本表';
+CREATE TABLE IF NOT EXISTS `BasePerson` (
+  `idPerson` BIGINT  UNSIGNED NOT NULL,
+  `idClass` INT(11) UNSIGNED NOT NULL,
+  PRIMARY KEY (`idPerson`))
+COMMENT='人信息基本表';
 
-CREATE TABLE IF NOT EXISTS `zzjs_main`.`NaturalPerson` (
-    `idPerson` INT(11) UNSIGNED NOT NULL,
-    `idSex` INT(11) UNSIGNED NOT NULL,
-    `valueBirthday` VARCHAR(32) NOT NULL,
-    PRIMARY KEY (`idPerson`),
-    CONSTRAINT `fk_NaturalPerson` FOREIGN KEY (`idPerson`)
-        REFERENCES `zzjs_main`.`BasePerson` (`idPerson`)
-        ON DELETE NO ACTION ON UPDATE NO ACTION
-)  COMMENT='自然人信息表';
+CREATE TABLE IF NOT EXISTS `NaturalPerson` (
+  `idPerson` BIGINT UNSIGNED NOT NULL,
+  `idSex` INT(11) UNSIGNED NOT NULL,
+  `valueBirthday` VARCHAR(32) NOT NULL,
+  PRIMARY KEY (`idPerson`),
+  CONSTRAINT `fk_NaturalPerson` 
+    FOREIGN KEY (`idPerson`)
+    REFERENCES `BasePerson` (`idPerson`)
+    ON DELETE NO ACTION 
+    ON UPDATE NO ACTION)
+COMMENT='自然人信息表';
 
-CREATE TABLE IF NOT EXISTS `zzjs_main`.`BaseCertificate` (
-    `idCertificate` INT(11) UNSIGNED NOT NULL,
-    `valueCertificate` VARCHAR(32) NOT NULL,
-    `valueName` VARCHAR(256) NOT NULL,
-    `idPerson` INT(11) UNSIGNED NOT NULL,
-    INDEX `baseCertificate_INDEX` (`valueCertificate` ASC , `idCertificate` ASC , `valueName` ASC)
-)  COMMENT='证件信息基本表';
+CREATE TABLE IF NOT EXISTS `LegalPerson` (
+  `idPerson` BIGINT UNSIGNED NOT NULL,
+  `idRepresentative` INT(11) UNSIGNED NOT NULL COMMENT '法人代表id，此id应在NaturalPerson中',
+  `valueCapital` VARCHAR(32) NULL COMMENT '注册资本',
+  PRIMARY KEY (`idPerson`),
+  INDEX `idRepresentative` (`idRepresentative` ASC),
+  CONSTRAINT `fk_LegalPerson`
+    FOREIGN KEY (`idPerson`)
+    REFERENCES `BasePerson` (`idPerson`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COMMENT='法人信息表';
+
+CREATE TABLE IF NOT EXISTS `BaseCertificate` (
+  `idCertificate` INT(11) UNSIGNED NOT NULL,
+  `valueCertificate` VARCHAR(32) NOT NULL,
+  `valueName` VARCHAR(256) NOT NULL,
+  `idPerson` BIGINT UNSIGNED NOT NULL,
+  INDEX `baseCertificate_INDEX` (`valueCertificate` ASC, `idCertificate` ASC, `valueName` ASC))
+COMMENT='证件信息基本表';
 
 CREATE VIEW `NaturalPersonView` AS
-    select 
-        BC.idCertificate,
-        BC.valueCertificate,
-        BC.valueName,
-        NP.idSex,
-        NP.valueBirthday,
-        BP.idClass
-    from
-        NaturalPerson NP,
-        BasePerson BP,
-        BaseCertificate BC
-    where
-        NP.idPerson = BP.idPerson
-            and NP.idPerson = BC.idPerson;
+  SELECT
+    BP.idClass,
+    NP.idPerson, NP.idSex, NP.valueBirthday
+  FROM
+    NaturalPerson NP,
+    BasePerson BP
+  WHERE
+    NP.idPerson = BP.idPerson;
 
 INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
 (1, '自然人类别', 0),
@@ -67,8 +76,37 @@ INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
 (200102, 'idCertificate', '税务登记号');
 
 DELIMITER $
-CREATE PROCEDURE `getvalueinto3`(in idc int, out idd int)
+CREATE PROCEDURE `AddPersonByIdentity` 
+  (IN personname VARCHAR(45), IN personid VARCHAR(45))
 BEGIN
-set idd = 67;
-select idd;
+  SET @sequ = uuid_short();
+  INSERT INTO `BasePerson` (`idPerson`, `idClass`) 
+    VALUES (@sequ, '1');
+  INSERT INTO `BaseCertificate` (`idCertificate`, `valueCertificate`, `valueName`, `idPerson`)
+    VALUES ('200001', personid, personname, @sequ);
+  SET @sexid = CAST(SUBSTRING(personid, 17, 1) AS UNSIGNED);
+  IF MOD(@sexid, 2) = 0 THEN
+    SET @sexname = '100002';
+  ELSE
+    SET @sexname = '100001';
+  END IF;
+  SET @birth = CONCAT(SUBSTRING(personid, 7, 4), '-', SUBSTRING(personid, 11, 2), '-', SUBSTRING(personid, 13, 2));
+  INSERT INTO `NaturalPerson` (`idPerson`, `idSex`, `valueBirthday`)
+    VALUES (@sequ, @sexname, @birth);
+  COMMIT;
 END $
+
+DELIMITER $ -- NOT FINISH
+CREATE FUNCTION `IsValidIdentity` 
+  (personid VARCHAR(45))
+RETURNS INT
+BEGIN
+  IF LENGTH(personid) != 18 THEN
+    RETURN 1;
+  END IF;
+  SET @ofday = MONTH(SUBSTRING(personid, 7, 8) );
+  IF @ofday = NULL THEN
+    RETURN 2;
+  END IF;
+  RETURN 0;
+END $ -- NOT FINISH
