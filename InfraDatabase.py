@@ -1,10 +1,15 @@
 # -*- coding:utf-8 -*-
 
-import mysql.connector
+class InfraDatabase(object): 
+  """This is Database connect and query"""
+  ConnectString = ( user='root',password='',host='192.168.206.139',database='InfraWeaver')
+  def __init__(self):
+    self.ConnectSQL = mysql.connector.connect(self.ConnectString)
+    print "aa"
 
 
 
-if __name__ == '__main__':
+
   try:
     print "BEGIN"
     connectsql = mysql.connector.connect( user='root',password='',host='192.168.206.139',database='InfraWeaver')    
@@ -27,5 +32,4 @@ if __name__ == '__main__':
     cursorsql.close()
     connectsql.close()
     print "END"
-
 
