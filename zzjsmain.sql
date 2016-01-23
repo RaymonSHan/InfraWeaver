@@ -131,8 +131,24 @@ BEGIN
   SET @birth = CONCAT(SUBSTRING(personid, 7, 4), '-', SUBSTRING(personid, 11, 2), '-', SUBSTRING(personid, 13, 2));
   INSERT INTO `NaturalPerson` (`idPerson`, `valueName`, `idSex`, `valueBirthday`)
     VALUES (@sequ, personname, @sexname, @birth);
-  SELECT 0, ◎sequ;  -- 0 for success
+  SELECT 0, @sequ;  -- 0 for success
   COMMIT;
+END $
+
+DELIMITER $
+CREATE PROCEDURE `GetPersonByIdentity` -- 身份证姓名，身份证号码
+  (IN personname VARCHAR(256), IN personid VARCHAR(32))
+BEGIN
+  SELECT
+    IF (personname = BC.valueName, 0, 1) AS result,
+    BC.idPerson
+  FROM
+    BaseCertificate BC,
+    NaturalPerson NP
+  WHERE
+    BC.idCertificate = '200001' AND
+    BC.valueCertificate = personid AND
+    BC.idPerson = NP.idPerson;
 END $
 
 DELIMITER $
@@ -144,12 +160,24 @@ BEGIN
     VALUES (@sequ, '1001');
   INSERT INTO `SecurityAccount` (`idAccount`, `idMarket`, `valueAccount`)
     VALUES (@sequ, '300001', accountid);
-  SELECT 0, ◎sequ;  -- 0 for success
+  SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END $
 
-
-
+DELIMITER $
+CREATE PROCEDURE `GetAccountByOTC` -- 报价系统产品帐户
+  (IN accountid VARCHAR(32))
+BEGIN
+  SELECT
+    0, BA.idAccount
+  FROM
+    BaseAccount BA,
+    SecurityAccount SA
+  WHERE
+    SA.idMarket = '300001' AND
+    BA.idAccount = SA.idAccount AND
+    SA.valueAccount = accountid;
+END $
 
 
 
