@@ -30,17 +30,26 @@ class InfraDatabase(object):
       return result
     except Exception as e:
       print(e)
+  def Query(self, procedure, parameter):
+    try:
+      executecursor = self.GetCursor()
+      executecursor.callproc("Query"+procedure, parameter)
+      result = []
+      for executeresult in executecursor.stored_results():
+        result.append( executeresult.fetchall() )
+      executecursor.close()
+      return result
+    except Exception as e:
+      print(e)
 
   def ExecuteAdd(self, procedure, parameter):
     return self.Execute("Add"+procedure, parameter)
-
   def ExecuteGet(self, procedure, parameter):
     resultset = self.Execute("Get"+procedure, parameter)
     if resultset == None:
       return (0, 0)
     else:
       return resultset
-
   def ExecuteReturn(self, procedure, parameter):
     (result, personid) = self.ExecuteGet(procedure, parameter)
     if result == 0 and personid == 0:
@@ -48,21 +57,31 @@ class InfraDatabase(object):
     else:
       return (result, personid)
 
-
   def AddPersonByIdentity(self, personname, personid):
     return self.ExecuteAdd("PersonByIdentity", (personname, personid))
-
   def GetPersonByIdentity(self, personname, personid):
     return self.ExecuteGet("PersonByIdentity", (personname, personid))
-
   def ReturnPersonByIdentity(self, personname, personid):
     return self.ExecuteReturn("PersonByIdentity", (personname, personid))
 
-  def AddPersonByIdentity(self, accountid):
+  def AddAccountByOTC(self, accountid):
     return self.ExecuteAdd("AccountByOTC", (accountid,))
-
-  def GetPersonByIdentity(self, accountid):
+  def GetAccountByOTC(self, accountid):
     return self.ExecuteGet("AccountByOTC", (accountid,))
-
-  def ReturnPersonByIdentity(self, accountid):
+  def ReturnAccountByOTC(self, accountid):
     return self.ExecuteReturn("AccountByOTC", (accountid,))
+
+  def AddRelationPersonAccount(self, personsequ, accountsequ):
+    return self.ExecuteAdd("RelationPersonAccount", (personsequ, accountsequ))
+  def GetRelationPersonAccount(self, personsequ, accountsequ):
+    return self.ExecuteGet("RelationPersonAccount", (personsequ, accountsequ))
+  def ReturnRelationPersonAccount(self, personsequ, accountsequ):
+    return self.ExecuteReturn("RelationPersonAccount", (personsequ, accountsequ))
+
+  def QueryAccountByIdentiry(self, personid):
+    return self.Query("AccountByIdentiry", (personid,))
+
+  def AddPersonAccountByIdentity(self, personname, personid, accountid):
+    (result, personsequ) = self.ReturnPersonByIdentity(personname, personid)
+    (result, accountsequ) = self.ReturnAccountByOTC(accountid)
+    return self.ReturnRelationPersonAccount(personsequ, accountsequ)

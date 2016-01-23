@@ -67,12 +67,12 @@ CREATE TABLE IF NOT EXISTS `SecurityAccount` (
 COMMENT = '证券账户表';
 
 CREATE TABLE IF NOT EXISTS `RelationPersonAccount` (
-  `RelaPersonAccount` BIGINT UNSIGNED NOT NULL,
+  `RePersonAccount` BIGINT UNSIGNED NOT NULL,
   `idPerson` BIGINT  UNSIGNED NOT NULL,
   `idAccount` BIGINT UNSIGNED NOT NULL,
-  PRIMARY KEY (`RelaPersonAccount`),
-  INDEX `RelaidPerson` (`idPerson` ASC),
-  INDEX `RelaidAccount` (`idAccount` ASC))
+  PRIMARY KEY (`RePersonAccount`),
+  INDEX `ReidPerson` (`idPerson` ASC),
+  INDEX `ReidAccount` (`idAccount` ASC))
 COMMENT='人员帐户关系表';
 
 CREATE VIEW `NaturalPersonView` AS
@@ -179,8 +179,37 @@ BEGIN
     SA.valueAccount = accountid;
 END $
 
+DELIMITER $
+CREATE PROCEDURE `AddRelationPersonAccount` -- 增加人员帐户关系
+  (IN personsequ BIGINT, IN accountsequ BIGINT)
+BEGIN
+  SET @sequ = uuid_short();
+  INSERT INTO `RelationPersonAccount` (`RePersonAccount`, `idPerson`, `idAccount`)
+    VALUES (@sequ, personsequ, accountsequ);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END $
 
+DELIMITER $
+CREATE PROCEDURE `GetRelationPersonAccount`
+  (IN personsequ BIGINT, IN accountsequ BIGINT)
+BEGIN
+  SELECT 0, RePersonAccount
+  FROM RelationPersonAccount
+  WHERE idPerson = personsequ AND idAccount = accountsequ;
+END $
 
+DELIMITER $
+CREATE PROCEDURE `QueryAccountByIdentiry`
+  (IN personid VARCHAR(32))
+BEGIN
+  SELECT SA.idMarket, SA.valueAccount
+  FROM `SecurityAccount` SA
+  WHERE SA.idAccount IN (
+    SELECT RPA.idAccount
+    FROM `RelationPersonAccount` RPA, `BaseCertificate` BC
+    WHERE RPA.idPerson = BC.idPerson AND BC.valueCertificate = personid );
+END $
 
 
 
