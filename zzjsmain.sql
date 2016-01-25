@@ -1,4 +1,6 @@
 
+CREATE SCHEMA `InfraWeaver` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
+
 CREATE TABLE IF NOT EXISTS `SystemClass` (
   `idClass` INT(11) UNSIGNED NOT NULL,
   `valueClass` VARCHAR(256) NULL,
@@ -34,6 +36,7 @@ COMMENT='自然人信息表';
 
 CREATE TABLE IF NOT EXISTS `LegalPerson` (
   `idPerson` BIGINT UNSIGNED NOT NULL,
+  `valueName` VARCHAR(256) NOT NULL,
   `idRepresentative` INT(11) UNSIGNED NOT NULL COMMENT '法人代表id，此id应在NaturalPerson中',
   `valueCapital` VARCHAR(32) NULL COMMENT '注册资本',
   PRIMARY KEY (`idPerson`),
@@ -75,6 +78,19 @@ CREATE TABLE IF NOT EXISTS `RelationPersonAccount` (
   INDEX `ReidAccount` (`idAccount` ASC))
 COMMENT='人员帐户关系表';
 
+CREATE TABLE IF NOT EXISTS `BaseProdure` (
+  `idProdure` BIGINT UNSIGNED NOT NULL,
+  `idClass` INT(11) UNSIGNED NOT NULL,
+  `valueName` VARCHAR(256) NOT NULL,
+  `valueShortname` VARCHAR(32) NULL,
+  `valueCode` VARCHAR(32) NULL,
+  `idConsignee` BIGINT UNSIGNED NOT NULL COMMENT '承销人，应在ParticipantPerson中',
+  `valueOthers` VARCHAR(32) NULL,
+  `valueNumberLimit` INT(11) NULL,
+  `valueNumberNow` INT(11) NULL,
+  PRIMARY KEY (`idProdure`))
+COMMENT = '产品信息基本表';
+
 CREATE VIEW `NaturalPersonView` AS
   SELECT
     BP.idClass,
@@ -84,6 +100,16 @@ CREATE VIEW `NaturalPersonView` AS
     BasePerson BP
   WHERE
     NP.idPerson = BP.idPerson;
+
+CREATE VIEW `LegalPersonView` AS
+  SELECT
+    BP.idClass,
+    LP.idPerson, LP.valueName, LP.idRepresentative, LP.valueCapital
+  FROM
+    LegalPerson LP,
+    BasePerson BP
+  WHERE
+    LP.idPerson = BP.idPerson;
 
 CREATE VIEW `SecurityAccountView` AS
   SELECT
@@ -101,7 +127,28 @@ INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
 (3, '产品持有类别', 0),
 (1001, '证券帐户', 0),
 (1002, '资金帐户', 0),
-(1003, '银行帐户', 0);
+(1003, '银行帐户', 0),
+(5100, '资产管理类', 0),
+(5101, '集合计划', 0),
+(5103, '定向计划', 0),
+(5104, '专项计划', 0),
+(5200, '债务融资工具类', 0),
+(5201, '中小企业私募债', 0),
+(5202, '次级债', 0),
+(5203, '非公开发行公司债', 0),
+(5300, '私募股权类', 0),
+(5400, '衍生品类', 0),
+(5402, '期权', 0),
+(5403, '互换', 0),
+(5406, '远期', 0),
+(5407, '结构化衍生品', 0),
+(5500, '资产支持证券类', 0),
+(5501, '资产支持证券', 0),
+(5600, '私募基金类', 0),
+(5601, '私募股权投资基金', 0),
+(5602, '私募证券投资基金', 0),
+(5700, '收益凭证类', 0),
+(5800, '其他类型', 0);
 
 INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
 (100001, 'idSex', '男'),
@@ -110,6 +157,7 @@ INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
 (200002, 'idCertificate', '护照'),
 (200101, 'idCertificate', '机构代码证'),
 (200102, 'idCertificate', '税务登记号'),
+(200103, 'idCertificate', '工商注册号'),
 (300001, 'idMarket', '报价系统'),
 (300002, 'idMarket', '场外一卡通');
 
@@ -149,6 +197,37 @@ BEGIN
     BC.idCertificate = '200001' AND
     BC.valueCertificate = personid AND
     BC.idPerson = NP.idPerson;
+END $
+
+DELIMITER $
+CREATE PROCEDURE `AddLegalByCommerce` -- 法人名称，工商登记号号码, 法人ID, 注册资本
+  (IN legalname VARCHAR(256), IN legalid VARCHAR(32), IN represenid BIGINT, IN capital BIGINT)
+BEGIN
+  SET @sequ = uuid_short();
+  INSERT INTO `BasePerson` (`idPerson`, `idClass`) 
+    VALUES (@sequ, '2');
+  INSERT INTO `BaseCertificate` (`idCertificate`, `valueCertificate`, `valueName`, `idPerson`)
+    VALUES ('200103', legalid, legalname, @sequ);
+  INSERT INTO `LegalPerson` (`idPerson`, `valueName`, `idRepresentative`, `valueCapital`)
+    VALUES (@sequ, legalname, represenid, capital);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END $
+
+DELIMITER $
+CREATE PROCEDURE `GetLegalByCommerce` -- 法人名称，工商登记号号码
+  (IN personname VARCHAR(256), IN personid VARCHAR(32), IN foo1 BIGINT, IN foo2 BIGINT)
+BEGIN
+  SELECT
+    IF (personname = BC.valueName, 0, 1) AS result,
+    BC.idPerson
+  FROM
+    BaseCertificate BC,
+    LegalPerson LP
+  WHERE
+    BC.idCertificate = '200103' AND
+    BC.valueCertificate = personid AND
+    BC.idPerson = LP.idPerson;
 END $
 
 DELIMITER $

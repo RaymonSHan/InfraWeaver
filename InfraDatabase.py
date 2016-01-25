@@ -64,6 +64,13 @@ class InfraDatabase(object):
   def ReturnPersonByIdentity(self, personname, personid):
     return self.ExecuteReturn("PersonByIdentity", (personname, personid))
 
+  def AddLegalByCommerce(self, legalname, legalid, represenid, capital):
+    return self.ExecuteAdd("LegalByCommerce", (legalname, legalid, represenid, capital))
+  def GetLegalByCommerce(self, legalname, legalid, represenid = 0, capital = 0):
+    return self.ExecuteGet("LegalByCommerce", (legalname, legalid, represenid, capital))
+  def ReturnLegalByCommerce(self, legalname, legalid, represenid, capital):
+    return self.ExecuteReturn("LegalByCommerce", (legalname, legalid, represenid, capital))
+
   def AddAccountByOTC(self, accountid):
     return self.ExecuteAdd("AccountByOTC", (accountid,))
   def GetAccountByOTC(self, accountid):
