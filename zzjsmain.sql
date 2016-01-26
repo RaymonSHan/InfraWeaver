@@ -16,23 +16,124 @@ CREATE TABLE IF NOT EXISTS `SystemField` (
 COMMENT='属性信息表';
 
 CREATE TABLE IF NOT EXISTS `BasePerson` (
-  `idPerson` BIGINT  UNSIGNED NOT NULL,
+  `sequPerson` BIGINT  UNSIGNED NOT NULL,
   `idClass` INT(11) UNSIGNED NOT NULL,
-  PRIMARY KEY (`idPerson`))
+  PRIMARY KEY (`sequPerson`))
 COMMENT='人信息基本表';
 
 CREATE TABLE IF NOT EXISTS `NaturalPerson` (
-  `idPerson` BIGINT UNSIGNED NOT NULL,
+  `sequPerson` BIGINT UNSIGNED NOT NULL,
   `valueName` VARCHAR(256) NOT NULL,
   `idSex` INT(11) UNSIGNED NOT NULL,
   `valueBirthday` VARCHAR(32) NOT NULL,
-  PRIMARY KEY (`idPerson`),
+  PRIMARY KEY (`sequPerson`),
   CONSTRAINT `fk_NaturalPerson` 
-    FOREIGN KEY (`idPerson`)
-    REFERENCES `BasePerson` (`idPerson`)
+    FOREIGN KEY (`sequPerson`)
+    REFERENCES `BasePerson` (`sequPerson`)
     ON DELETE NO ACTION 
     ON UPDATE NO ACTION)
 COMMENT='自然人信息表';
+
+CREATE TABLE IF NOT EXISTS `BaseCertificate` (
+  `idCertificate` INT(11) UNSIGNED NOT NULL,
+  `valueCertificate` VARCHAR(32) NOT NULL,
+  `valueName` VARCHAR(256) NOT NULL,
+  `sequPerson` BIGINT UNSIGNED NOT NULL,
+  UNIQUE `baseCertificate_INDEX` (`valueCertificate` ASC, `idCertificate` ASC))
+COMMENT='证件信息基本表';
+
+CREATE VIEW `NaturalPersonView` AS
+  SELECT
+    BP.idClass,
+    NP.sequPerson, NP.valueName, NP.idSex, NP.valueBirthday
+  FROM
+    NaturalPerson NP, BasePerson BP
+  WHERE
+    NP.sequPerson = BP.sequPerson;
+
+INSERT INTO `SystemClass` 
+  (`idClass`, `valueClass`, `startClass`) 
+VALUES
+  (1, '自然人类别', 0),
+  (2, '法人类别', 0),
+  (3, '产品持有类别', 0);
+
+INSERT INTO `SystemField` 
+  (`idField`, `descField`, `valueField`) 
+VALUES
+  (100001, 'idSex', '男'),
+  (100002, 'idSex', '女'),
+  (200001, 'idCertificate', '身份证'),
+  (200002, 'idCertificate', '护照');
+
+DELIMITER $
+CREATE PROCEDURE `__AddBasePerson` (
+  IN idclass INT(11),
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
+  INOUT sequperson BIGINT )
+BEGIN
+  IF sequperson = 0 THEN
+    SET @sequ = uuid_short();
+    INSERT INTO `BasePerson` (`sequPerson`, `idClass`) 
+      VALUES (@sequ, idclass);
+  ELSE
+    -- should check whether sequperson is valid
+    SET @sequ = sequperson;
+  END IF;
+  SET sequperson = 0;
+  INSERT INTO `BaseCertificate` (`idCertificate`, `valueCertificate`, `valueName`, `sequPerson`)
+    VALUES (idcert, valcert, valname, @sequ);
+  SET sequperson = @sequ;
+END; $
+
+DELIMITER $
+CREATE PROCEDURE `GetPerson` (
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256) )
+BEGIN
+  SELECT
+    IF (valname = BC.valueName, 0, 1) AS result,
+    BC.idPerson
+  FROM
+    BaseCertificate BC,
+    BasePerson BP
+  WHERE
+    BC.idCertificate = idcert AND
+    BC.valueCertificate = valcert AND
+    BC.sequPerson = BP.sequPerson;
+END; $
+
+DELIMITER $
+CREATE PROCEDURE `AddNaturalPerson`
+  ( IN valcert VARCHAR(32), IN valname VARCHAR(256), IN valsex INT(11), IN valbirth VARCHAR(32) )  -- 身份证姓名，身份证号码
+BEGIN
+--  SET @idsex = CAST(SUBSTRING(valcert, 17, 1) AS UNSIGNED);
+--  IF MOD(@idsex, 2) = 0 THEN
+--    SET @valsex = '100002';
+--  ELSE
+--    SET @valsex = '100001';
+--  END IF;
+--  SET @valbirth = CONCAT(SUBSTRING(valcert, 7, 4), '-', SUBSTRING(valcert, 11, 2), '-', SUBSTRING(valcert, 13, 2));
+  SET @sequ = 0;
+  CALL __AddBasePerson(1, 200001, valcert, valname, @sequ);
+  INSERT INTO `NaturalPerson` (`sequPerson`, `valueName`, `idSex`, `valueBirthday`)
+    VALUES (@sequ, valname, @valsex, @valbirth);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END; $
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS `LegalPerson` (
   `idPerson` BIGINT UNSIGNED NOT NULL,
@@ -47,14 +148,6 @@ CREATE TABLE IF NOT EXISTS `LegalPerson` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 COMMENT='法人信息表';
-
-CREATE TABLE IF NOT EXISTS `BaseCertificate` (
-  `idCertificate` INT(11) UNSIGNED NOT NULL,
-  `valueCertificate` VARCHAR(32) NOT NULL,
-  `valueName` VARCHAR(256) NOT NULL,
-  `idPerson` BIGINT UNSIGNED NOT NULL,
-  INDEX `baseCertificate_INDEX` (`valueCertificate` ASC, `idCertificate` ASC, `valueName` ASC))
-COMMENT='证件信息基本表';
 
 CREATE TABLE IF NOT EXISTS `BaseAccount` (
   `idAccount` BIGINT UNSIGNED NOT NULL,
@@ -91,15 +184,7 @@ CREATE TABLE IF NOT EXISTS `BaseProdure` (
   PRIMARY KEY (`idProdure`))
 COMMENT = '产品信息基本表';
 
-CREATE VIEW `NaturalPersonView` AS
-  SELECT
-    BP.idClass,
-    NP.idPerson, NP.valueName, NP.idSex, NP.valueBirthday
-  FROM
-    NaturalPerson NP,
-    BasePerson BP
-  WHERE
-    NP.idPerson = BP.idPerson;
+
 
 CREATE VIEW `LegalPersonView` AS
   SELECT
@@ -122,9 +207,6 @@ CREATE VIEW `SecurityAccountView` AS
     SA.idAccount = BA.idAccount;
 
 INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
-(1, '自然人类别', 0),
-(2, '法人类别', 0),
-(3, '产品持有类别', 0),
 (1001, '证券帐户', 0),
 (1002, '资金帐户', 0),
 (1003, '银行帐户', 0),
@@ -151,10 +233,6 @@ INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
 (5800, '其他类型', 0);
 
 INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
-(100001, 'idSex', '男'),
-(100002, 'idSex', '女'),
-(200001, 'idCertificate', '身份证'),
-(200002, 'idCertificate', '护照'),
 (200101, 'idCertificate', '机构代码证'),
 (200102, 'idCertificate', '税务登记号'),
 (200103, 'idCertificate', '工商注册号'),

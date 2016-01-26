@@ -42,6 +42,7 @@ class InfraDatabase(object):
     except Exception as e:
       print(e)
 
+class InfraDatabase_old(object):
   def ExecuteAdd(self, procedure, parameter):
     return self.Execute("Add"+procedure, parameter)
   def ExecuteGet(self, procedure, parameter):
