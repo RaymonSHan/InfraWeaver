@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import mysql.connector
+from InfraCommon import *
 
 class InfraDatabase(object): 
   """This is Database connect and query"""
@@ -42,29 +43,40 @@ class InfraDatabase(object):
     except Exception as e:
       print(e)
 
-class InfraDatabase_old(object):
-  def ExecuteAdd(self, procedure, parameter):
-    return self.Execute("Add"+procedure, parameter)
-  def ExecuteGet(self, procedure, parameter):
-    resultset = self.Execute("Get"+procedure, parameter)
+  def ExecuteAdd(self, addproc, addpara):
+    resultset =  self.Execute(addproc, addpara)
     if resultset == None:
-      return (0, 0)
+      return (1, 0)  # first 1 for error in add
     else:
       return resultset
-  def ExecuteReturn(self, procedure, parameter):
-    (result, personid) = self.ExecuteGet(procedure, parameter)
+  def ExecuteGet(self, getproc, getpara):
+    resultset = self.Execute(getproc, getpara)
+    if resultset == None:
+      return (0, 0)  # first 0 for success, second 0 for not found
+    else:
+      return resultset
+  def ExecuteReturn(self, getproc, getpara, addproc, addpara):
+    (result, personid) = self.ExecuteGet(getproc, getpara)
     if result == 0 and personid == 0:
-      return self.ExecuteAdd(procedure, parameter)
+      return self.ExecuteAdd(addproc, addpara)
     else:
       return (result, personid)
 
-  def AddPersonByIdentity(self, personname, personid):
-    return self.ExecuteAdd("PersonByIdentity", (personname, personid))
-  def GetPersonByIdentity(self, personname, personid):
-    return self.ExecuteGet("PersonByIdentity", (personname, personid))
-  def ReturnPersonByIdentity(self, personname, personid):
-    return self.ExecuteReturn("PersonByIdentity", (personname, personid))
+  def AddPersonByIdentity(self, valcert, valname):
+    (valsex, valbirth) = AnalyzePersonIdentity(valcert, valname)
+    addset = (200001, valcert, valname, valsex, valbirth)
+    return self.ExecuteAdd("AddNaturalPerson", addset)
+  def GetPersonByIdentity(self, valcert, valname):
+    getset = (200001, valcert, valname)
+    return self.ExecuteGet("GetPerson", getset)
+  def ReturnPersonByIdentity(self, valcert, valname):
+    (valsex, valbirth) = AnalyzePersonIdentity(valcert, valname)
+    getset = (200001, valcert, valname)
+    addset = (200001, valcert, valname, valsex, valbirth)
+    return self.ExecuteReturn("GetPerson", getset, "AddNaturalPerson", addset)
+# ABOVE FINISHED in Jan. 27 '15
 
+class InfraDatabase_old(object):
   def AddLegalByCommerce(self, legalname, legalid, represenid, capital):
     return self.ExecuteAdd("LegalByCommerce", (legalname, legalid, represenid, capital))
   def GetLegalByCommerce(self, legalname, legalid, represenid = 0, capital = 0):

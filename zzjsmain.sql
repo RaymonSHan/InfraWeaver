@@ -92,7 +92,7 @@ CREATE PROCEDURE `GetPerson` (
 BEGIN
   SELECT
     IF (valname = BC.valueName, 0, 1) AS result,
-    BC.idPerson
+    BC.sequPerson
   FROM
     BaseCertificate BC,
     BasePerson BP
@@ -103,25 +103,19 @@ BEGIN
 END; $
 
 DELIMITER $
-CREATE PROCEDURE `AddNaturalPerson`
-  ( IN valcert VARCHAR(32), IN valname VARCHAR(256), IN valsex INT(11), IN valbirth VARCHAR(32) )  -- 身份证姓名，身份证号码
+CREATE PROCEDURE `AddNaturalPerson` ( 
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
+  IN valsex INT(11), IN valbirth VARCHAR(32) )
 BEGIN
---  SET @idsex = CAST(SUBSTRING(valcert, 17, 1) AS UNSIGNED);
---  IF MOD(@idsex, 2) = 0 THEN
---    SET @valsex = '100002';
---  ELSE
---    SET @valsex = '100001';
---  END IF;
---  SET @valbirth = CONCAT(SUBSTRING(valcert, 7, 4), '-', SUBSTRING(valcert, 11, 2), '-', SUBSTRING(valcert, 13, 2));
   SET @sequ = 0;
-  CALL __AddBasePerson(1, 200001, valcert, valname, @sequ);
+  CALL __AddBasePerson(1, idcert, valcert, valname, @sequ);
   INSERT INTO `NaturalPerson` (`sequPerson`, `valueName`, `idSex`, `valueBirthday`)
-    VALUES (@sequ, valname, @valsex, @valbirth);
+    VALUES (@sequ, valname, valsex, valbirth);
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
 
-
+-- ABOVE FINISHED in Jan. 27 '15
 
 
 
@@ -239,6 +233,7 @@ INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
 (300001, 'idMarket', '报价系统'),
 (300002, 'idMarket', '场外一卡通');
 
+'''
 DELIMITER $
 CREATE PROCEDURE `AddPersonByIdentity` -- 身份证姓名，身份证号码
   (IN personname VARCHAR(256), IN personid VARCHAR(32))
@@ -276,6 +271,7 @@ BEGIN
     BC.valueCertificate = personid AND
     BC.idPerson = NP.idPerson;
 END $
+'''
 
 DELIMITER $
 CREATE PROCEDURE `AddLegalByCommerce` -- 法人名称，工商登记号号码, 法人ID, 注册资本
