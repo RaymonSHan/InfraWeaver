@@ -15,6 +15,21 @@ CREATE TABLE IF NOT EXISTS `SystemField` (
   PRIMARY KEY (`idField`))
 COMMENT='属性信息表';
 
+INSERT INTO `SystemClass` 
+  (`idClass`, `valueClass`, `startClass`) 
+VALUES
+  (1, '自然人类别', 0),
+  (2, '法人类别', 0),
+  (3, '产品持有类别', 0);
+
+INSERT INTO `SystemField` 
+  (`idField`, `descField`, `valueField`) 
+VALUES
+  (100001, 'idSex', '男'),
+  (100002, 'idSex', '女'),
+  (200001, 'idCertificate', '身份证'),
+  (200002, 'idCertificate', '护照');
+
 CREATE TABLE IF NOT EXISTS `BasePerson` (
   `sequPerson` BIGINT  UNSIGNED NOT NULL,
   `idClass` INT(11) UNSIGNED NOT NULL,
@@ -50,21 +65,6 @@ CREATE VIEW `NaturalPersonView` AS
     NaturalPerson NP, BasePerson BP
   WHERE
     NP.sequPerson = BP.sequPerson;
-
-INSERT INTO `SystemClass` 
-  (`idClass`, `valueClass`, `startClass`) 
-VALUES
-  (1, '自然人类别', 0),
-  (2, '法人类别', 0),
-  (3, '产品持有类别', 0);
-
-INSERT INTO `SystemField` 
-  (`idField`, `descField`, `valueField`) 
-VALUES
-  (100001, 'idSex', '男'),
-  (100002, 'idSex', '女'),
-  (200001, 'idCertificate', '身份证'),
-  (200002, 'idCertificate', '护照');
 
 DELIMITER $
 CREATE PROCEDURE `__AddBasePerson` (
@@ -114,47 +114,149 @@ BEGIN
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
+-- ABOVE FINISHED in Jan. 27 '15, for NaturalPerson
 
--- ABOVE FINISHED in Jan. 27 '15
-
-
-
-
-
-
-
-
-
-
-
-
+INSERT INTO `SystemField` 
+  (`idField`, `descField`, `valueField`) 
+VALUES
+  (200101, 'idCertificate', '机构代码证'),
+  (200102, 'idCertificate', '税务登记号'),
+  (200103, 'idCertificate', '工商注册号');
 
 CREATE TABLE IF NOT EXISTS `LegalPerson` (
-  `idPerson` BIGINT UNSIGNED NOT NULL,
+  `sequPerson` BIGINT UNSIGNED NOT NULL,
   `valueName` VARCHAR(256) NOT NULL,
-  `idRepresentative` INT(11) UNSIGNED NOT NULL COMMENT '法人代表id，此id应在NaturalPerson中',
-  `valueCapital` VARCHAR(32) NULL COMMENT '注册资本',
-  PRIMARY KEY (`idPerson`),
-  INDEX `idRepresentative` (`idRepresentative` ASC),
+  `sequRepresentative` BIGINT UNSIGNED NOT NULL COMMENT '法人代表id，此id应在NaturalPerson中',
+  `valueCapital` VARCHAR(32) NULL COMMENT '注册资本，仅供显示',
+  PRIMARY KEY (`sequPerson`),
+  INDEX `indexRepresentative` (`sequRepresentative` ASC),
   CONSTRAINT `fk_LegalPerson`
-    FOREIGN KEY (`idPerson`)
-    REFERENCES `BasePerson` (`idPerson`)
+    FOREIGN KEY (`sequPerson`)
+    REFERENCES `BasePerson` (`sequPerson`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 COMMENT='法人信息表';
 
+CREATE VIEW `LegalPersonView` AS
+  SELECT
+    BP.idClass,
+    LP.sequPerson, LP.valueName, LP.sequRepresentative, LP.valueCapital
+  FROM
+    LegalPerson LP,
+    BasePerson BP
+  WHERE
+    LP.sequPerson = BP.sequPerson;
+
+DELIMITER $
+CREATE PROCEDURE `AddLegalPerson` (
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
+  IN sequrepr BIGINT, IN valcapital VARCHAR(32) )
+BEGIN
+  SET @sequ = 0;
+  CALL __AddBasePerson(1, idcert, valcert, valname, @sequ);
+  INSERT INTO `LegalPerson` (`sequPerson`, `valueName`, `sequRepresentative`, `valueCapital`)
+    VALUES (@sequ, valname, sequrepr, valcapital);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END $
+-- ABOVE FINISHED in Jan. 27 '15, for LegalPerson
+
+INSERT INTO `SystemClass` 
+  (`idClass`, `valueClass`, `startClass`) 
+VALUES
+  (1001, '证券帐户', 0),
+  (1002, '资金帐户', 0),
+  (1003, '银行帐户', 0);
+
+INSERT INTO `SystemField` 
+  (`idField`, `descField`, `valueField`)
+VALUES
+  (300001, 'idMarket', '报价系统'),
+  (300002, 'idMarket', '场外一卡通'),
+  (400001, 'idAccountType', '个人主帐号'),
+  (400002, 'idAccountType', '个人附加帐号');
+
 CREATE TABLE IF NOT EXISTS `BaseAccount` (
-  `idAccount` BIGINT UNSIGNED NOT NULL,
+  `sequAccount` BIGINT UNSIGNED NOT NULL,
   `idClass` INT(11) UNSIGNED NOT NULL,
-  PRIMARY KEY (`idAccount`))
+  `idMarket` INT(11) UNSIGNED NOT NULL,
+  `valueAccount` VARCHAR(32) NOT NULL,
+  PRIMARY KEY (`sequAccount`))
 COMMENT='帐号基本表';
 
 CREATE TABLE IF NOT EXISTS `SecurityAccount` (
-  `idAccount` BIGINT UNSIGNED NOT NULL,
-  `idMarket` BIGINT UNSIGNED NOT NULL,
-  `valueAccount` VARCHAR(32) NOT NULL,
-  PRIMARY KEY (`idAccount`))
-COMMENT = '证券账户表';
+  `sequAccount` BIGINT UNSIGNED NOT NULL,
+  `idAccountType` INT(11) UNSIGNED NOT NULL,
+  PRIMARY KEY (`sequAccount`))
+COMMENT='证券账户表';
+
+CREATE VIEW `SecurityAccountView` AS
+  SELECT
+    BA.idClass, SA.idAccountType,
+    SA.sequAccount, BA.idMarket, BA.valueAccount
+  FROM
+    SecurityAccount SA,
+    BaseAccount BA
+  WHERE
+    SA.sequAccount = BA.sequAccount;
+
+
+
+
+
+DELIMITER $
+CREATE PROCEDURE `__AddBaseAccount` (
+  IN idclass INT(11),
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
+  INOUT sequperson BIGINT )
+BEGIN
+  IF sequperson = 0 THEN
+    SET @sequ = uuid_short();
+    INSERT INTO `BasePerson` (`sequPerson`, `idClass`) 
+      VALUES (@sequ, idclass);
+  ELSE
+    -- should check whether sequperson is valid
+    SET @sequ = sequperson;
+  END IF;
+  SET sequperson = 0;
+  INSERT INTO `BaseCertificate` (`idCertificate`, `valueCertificate`, `valueName`, `sequPerson`)
+    VALUES (idcert, valcert, valname, @sequ);
+  SET sequperson = @sequ;
+END; $
+
+DELIMITER $
+CREATE PROCEDURE `GetPerson` (
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256) )
+BEGIN
+  SELECT
+    IF (valname = BC.valueName, 0, 1) AS result,
+    BC.sequPerson
+  FROM
+    BaseCertificate BC,
+    BasePerson BP
+  WHERE
+    BC.idCertificate = idcert AND
+    BC.valueCertificate = valcert AND
+    BC.sequPerson = BP.sequPerson;
+END; $
+
+DELIMITER $
+CREATE PROCEDURE `AddNaturalPerson` ( 
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
+  IN valsex INT(11), IN valbirth VARCHAR(32) )
+BEGIN
+  SET @sequ = 0;
+  CALL __AddBasePerson(1, idcert, valcert, valname, @sequ);
+  INSERT INTO `NaturalPerson` (`sequPerson`, `valueName`, `idSex`, `valueBirthday`)
+    VALUES (@sequ, valname, valsex, valbirth);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END; $
+
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS `RelationPersonAccount` (
   `RePersonAccount` BIGINT UNSIGNED NOT NULL,
@@ -179,31 +281,7 @@ CREATE TABLE IF NOT EXISTS `BaseProdure` (
 COMMENT = '产品信息基本表';
 
 
-
-CREATE VIEW `LegalPersonView` AS
-  SELECT
-    BP.idClass,
-    LP.idPerson, LP.valueName, LP.idRepresentative, LP.valueCapital
-  FROM
-    LegalPerson LP,
-    BasePerson BP
-  WHERE
-    LP.idPerson = BP.idPerson;
-
-CREATE VIEW `SecurityAccountView` AS
-  SELECT
-    BA.idClass,
-    SA.idAccount, SA.idMarket, SA.valueAccount
-  FROM
-    SecurityAccount SA,
-    BaseAccount BA
-  WHERE
-    SA.idAccount = BA.idAccount;
-
 INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
-(1001, '证券帐户', 0),
-(1002, '资金帐户', 0),
-(1003, '银行帐户', 0),
 (5100, '资产管理类', 0),
 (5101, '集合计划', 0),
 (5103, '定向计划', 0),
@@ -226,12 +304,7 @@ INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
 (5700, '收益凭证类', 0),
 (5800, '其他类型', 0);
 
-INSERT INTO `SystemField` (`idField`, `descField`, `valueField`) VALUES
-(200101, 'idCertificate', '机构代码证'),
-(200102, 'idCertificate', '税务登记号'),
-(200103, 'idCertificate', '工商注册号'),
-(300001, 'idMarket', '报价系统'),
-(300002, 'idMarket', '场外一卡通');
+
 
 '''
 DELIMITER $
@@ -271,7 +344,6 @@ BEGIN
     BC.valueCertificate = personid AND
     BC.idPerson = NP.idPerson;
 END $
-'''
 
 DELIMITER $
 CREATE PROCEDURE `AddLegalByCommerce` -- 法人名称，工商登记号号码, 法人ID, 注册资本
@@ -303,6 +375,7 @@ BEGIN
     BC.valueCertificate = personid AND
     BC.idPerson = LP.idPerson;
 END $
+'''
 
 DELIMITER $
 CREATE PROCEDURE `AddAccountByOTC` -- 增加报价系统产品帐户

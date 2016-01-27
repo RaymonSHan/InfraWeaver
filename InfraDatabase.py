@@ -74,16 +74,21 @@ class InfraDatabase(object):
     getset = (200001, valcert, valname)
     addset = (200001, valcert, valname, valsex, valbirth)
     return self.ExecuteReturn("GetPerson", getset, "AddNaturalPerson", addset)
-# ABOVE FINISHED in Jan. 27 '15
+# ABOVE FINISHED in Jan. 27 '15, for NaturalPerson
+
+  def AddLegalByCommerce(self, valcert, valname, sequrepr, valcapital):
+    addset = (200103, valcert, valname, sequrepr, valcapital)
+    return self.ExecuteAdd("AddLegalPerson", addset)
+  def GetLegalByCommerce(self, valcert, valname):
+    getset = (200103, valcert, valname)
+    return self.ExecuteGet("GetPerson", getset)
+  def ReturnLegalByCommerce(self, valcert, valname, sequrepr, valcapital):
+    getset = (200103, valcert, valname)
+    addset = (200103, valcert, valname, sequrepr, valcapital)
+    return self.ExecuteReturn("GetPerson", getset, "AddLegalPerson", addset)
+# ABOVE FINISHED in Jan. 27 '15, for LegalPerson
 
 class InfraDatabase_old(object):
-  def AddLegalByCommerce(self, legalname, legalid, represenid, capital):
-    return self.ExecuteAdd("LegalByCommerce", (legalname, legalid, represenid, capital))
-  def GetLegalByCommerce(self, legalname, legalid, represenid = 0, capital = 0):
-    return self.ExecuteGet("LegalByCommerce", (legalname, legalid, represenid, capital))
-  def ReturnLegalByCommerce(self, legalname, legalid, represenid, capital):
-    return self.ExecuteReturn("LegalByCommerce", (legalname, legalid, represenid, capital))
-
   def AddAccountByOTC(self, accountid):
     return self.ExecuteAdd("AccountByOTC", (accountid,))
   def GetAccountByOTC(self, accountid):
