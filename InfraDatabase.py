@@ -88,14 +88,19 @@ class InfraDatabase(object):
     return self.ExecuteReturn("GetPerson", getset, "AddLegalPerson", addset)
 # ABOVE FINISHED in Jan. 27 '15, for LegalPerson
 
-class InfraDatabase_old(object):
-  def AddAccountByOTC(self, accountid):
-    return self.ExecuteAdd("AccountByOTC", (accountid,))
-  def GetAccountByOTC(self, accountid):
-    return self.ExecuteGet("AccountByOTC", (accountid,))
-  def ReturnAccountByOTC(self, accountid):
-    return self.ExecuteReturn("AccountByOTC", (accountid,))
+  def AddSecurityAccountOTC(self, valaccount):
+    addset = (300001, valaccount)
+    return self.ExecuteAdd("AddSecurityAccount", addset)
+  def GetSecurityAccountOTC(self, valaccount):
+    getset = (300001, valaccount)
+    return self.ExecuteGet("GetSecurityAccount", getset)
+  def ReturnSecurityAccountOTC(self, valaccount):
+    getset = (300001, valaccount)
+    addset = (300001, valaccount)
+    return self.ExecuteReturn("GetSecurityAccount", getset, "AddSecurityAccount", addset)
+# ABOVE FINISHED in Jan. 29 '15, for SecurityAccount
 
+class InfraDatabase_old(object):
   def AddRelationPersonAccount(self, personsequ, accountsequ):
     return self.ExecuteAdd("RelationPersonAccount", (personsequ, accountsequ))
   def GetRelationPersonAccount(self, personsequ, accountsequ):

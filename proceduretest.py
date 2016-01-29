@@ -7,8 +7,7 @@ if __name__ == '__main__':
 #  infra = InfraDatabase('root', 'root', '127.0.0.1')
   infra = InfraDatabase('root', '', '192.168.206.139')
 
-  vcert = "006225588135"
-  vname = "中证技术"
+  vacc = "008123456789"
 
 
   print result, sequ
@@ -25,13 +24,15 @@ if __name__ == '__main__':
   vcert = "113322200011223255"
   vname = "王五"
   (result, sequ) = infra.GetPersonByIdentity( vcert, vname )
-  print result, sequ
   vcert = "006225588135"
   vname = "中证技术"
   (result, sequ) = infra.AddLegalByCommerce(vcert, vname, sequ, 100000)
   (result, sequ) = infra.GetLegalByCommerce(vcert, vname)
 # ABOVE FINISHED in Jan. 27 '15, for LegalPerson
-'''
- 
 
-#  print resultv
+  vacc = "008123456789"
+  (result, sequ) = infra.AddSecurityAccountOTC(vacc)
+  (result, sequ) = infra.ReturnSecurityAccountOTC(vacc)
+# ABOVE FINISHED in Jan. 29 '15, for SecurityAccount
+'''
+
