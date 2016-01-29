@@ -242,27 +242,53 @@ BEGIN
 END; $
 -- ABOVE FINISHED in Jan. 29 '15, for SecurityAccount
 
-
-
-
-
 INSERT INTO `SystemField` 
   (`idField`, `descField`, `valueField`)
 VALUES
   (400001, 'idAccountType', '个人主帐号'),
-  (400002, 'idAccountType', '个人附加帐号');
+  (400002, 'idAccountType', '个人附加帐号'),
+  (400003, 'idAccountType', '实际持有人');
 
-
-
-CREATE TABLE IF NOT EXISTS `RelationPersonAccount` (
+CREATE TABLE IF NOT EXISTS `BasePersonAccount` (
+  `sequPersonAccount` BIGINT UNSIGNED NOT NULL,
+  `sequPerson` BIGINT UNSIGNED NOT NULL,
+  `sequAccount` BIGINT UNSIGNED NOT NULL,
   `idAccountType` INT(11) UNSIGNED NOT NULL,
-  `RePersonAccount` BIGINT UNSIGNED NOT NULL,
-  `idPerson` BIGINT  UNSIGNED NOT NULL,
-  `idAccount` BIGINT UNSIGNED NOT NULL,
-  PRIMARY KEY (`RePersonAccount`),
-  INDEX `ReidPerson` (`idPerson` ASC),
-  INDEX `ReidAccount` (`idAccount` ASC))
+  PRIMARY KEY (`sequPersonAccount`),
+  INDEX `indexPerson` (`sequPerson` ASC),
+  INDEX `indexAccount` (`sequAccount` ASC),
+  UNIQUE `indexPersonAccount` (`sequPerson` ASC, `sequAccount` ASC))
 COMMENT='人员帐户关系表';
+
+DELIMITER $
+CREATE PROCEDURE `AddPersonAccount` (
+  IN sequper BIGINT, IN sequacc BIGINT, IN idtype INT(11))
+BEGIN
+  SET @sequ = uuid_short();
+  INSERT INTO `BasePersonAccount` (`sequPersonAccount`, `sequPerson`, `sequAccount`, `idAccountType`)
+    VALUES (@sequ, sequper, sequacc, idtype);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END; $
+
+DELIMITER $
+CREATE PROCEDURE `GetPersonAccount` (
+  IN sequper BIGINT, IN sequacc BIGINT, IN idtype INT(11))
+BEGIN
+  SELECT
+    IF (idtype = BPA.idAccountType, 0, 1) AS result,
+    BPA.sequPersonAccount
+  FROM
+    BasePersonAccount BPA
+  WHERE
+    BPA.sequPerson = sequper AND
+    BPA.sequAccount = sequacc;
+END; $
+
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS `BaseProdure` (
   `idProdure` BIGINT UNSIGNED NOT NULL,

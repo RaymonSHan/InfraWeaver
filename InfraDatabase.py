@@ -34,7 +34,7 @@ class InfraDatabase(object):
   def Query(self, procedure, parameter):
     try:
       executecursor = self.GetCursor()
-      executecursor.callproc("Query"+procedure, parameter)
+      executecursor.callproc(procedure, parameter)
       result = []
       for executeresult in executecursor.stored_results():
         result.append( executeresult.fetchall() )
@@ -100,18 +100,47 @@ class InfraDatabase(object):
     return self.ExecuteReturn("GetSecurityAccount", getset, "AddSecurityAccount", addset)
 # ABOVE FINISHED in Jan. 29 '15, for SecurityAccount
 
-class InfraDatabase_old(object):
-  def AddRelationPersonAccount(self, personsequ, accountsequ):
-    return self.ExecuteAdd("RelationPersonAccount", (personsequ, accountsequ))
-  def GetRelationPersonAccount(self, personsequ, accountsequ):
-    return self.ExecuteGet("RelationPersonAccount", (personsequ, accountsequ))
-  def ReturnRelationPersonAccount(self, personsequ, accountsequ):
-    return self.ExecuteReturn("RelationPersonAccount", (personsequ, accountsequ))
+  def AddPersonAccount(self, sequper, sequacc, idtype):
+    addset = (sequper, sequacc, idtype)
+    return self.ExecuteAdd("AddPersonAccount", addset)
+  def GetPersonAccount(self, sequper, sequacc, idtype):
+    getset = (sequper, sequacc, idtype)
+    return self.ExecuteGet("GetPersonAccount", getset)
+  def ReturnPersonAccount(self, sequper, sequacc, idtype):
+    addset = (sequper, sequacc, idtype)
+    getset = (sequper, sequacc, idtype)
+    return self.ExecuteReturn("GetPersonAccount", getset, "AddPersonAccount", addset)
 
+  def AddPersonPrimaryAccount(self, valcert, valname, valaccount): # by Identiry and OTC account
+    (result, sequper) = self.ReturnPersonByIdentity(valcert, valname)
+    if result == 1:
+      return (1, 0)
+    (result, sequacc) = self.ReturnSecurityAccountOTC(valaccount)
+    if result == 1:
+      return (1, 0)
+    return self.ReturnPersonAccount(sequper, sequacc, 400001)
+  def AddPersonSecondaryAccount(self, valcert, valname, valaccount): # by Identiry and OTC account
+    (result, sequper) = self.GetPersonByIdentity(valcert, valname)
+    if result != 0 or sequper == 0:
+      return (1, 0)
+    (result, sequacc) = self.ReturnSecurityAccountOTC(valaccount)
+    if result == 1:
+      return (1, 0)
+    return self.ReturnPersonAccount(sequper, sequacc, 400002)
+  def AddNominalPerson(self, valcert, valname, valaccount):
+    (result, sequper) = self.ReturnPersonByIdentity(valcert, valname)
+    if result == 1:
+      return (1, 0)
+    (result, sequacc) = self.GetSecurityAccountOTC(valaccount)
+    if result == 1:
+      return (1, 0)
+    return self.ReturnPersonAccount(sequper, sequacc, 400003)
+
+
+
+
+
+class InfraDatabase_old(object):
   def QueryAccountByIdentiry(self, personid):
     return self.Query("AccountByIdentiry", (personid,))
 
-  def AddPersonAccountByIdentity(self, personname, personid, accountid):
-    (result, personsequ) = self.ReturnPersonByIdentity(personname, personid)
-    (result, accountsequ) = self.ReturnAccountByOTC(accountid)
-    return self.ReturnRelationPersonAccount(personsequ, accountsequ)
