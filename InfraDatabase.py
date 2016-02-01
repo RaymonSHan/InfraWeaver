@@ -74,7 +74,7 @@ class InfraDatabase(object):
     getset = (200001, valcert, valname)
     addset = (200001, valcert, valname, valsex, valbirth)
     return self.ExecuteReturn("GetPerson", getset, "AddNaturalPerson", addset)
-# ABOVE FINISHED in Jan. 27 '15, for NaturalPerson
+# ABOVE FINISHED in Jan. 27 '16, for NaturalPerson
 
   def AddLegalByCommerce(self, valcert, valname, sequrepr, valcapital):
     addset = (200103, valcert, valname, sequrepr, valcapital)
@@ -86,7 +86,7 @@ class InfraDatabase(object):
     getset = (200103, valcert, valname)
     addset = (200103, valcert, valname, sequrepr, valcapital)
     return self.ExecuteReturn("GetPerson", getset, "AddLegalPerson", addset)
-# ABOVE FINISHED in Jan. 27 '15, for LegalPerson
+# ABOVE FINISHED in Jan. 27 '16, for LegalPerson
 
   def AddSecurityAccountOTC(self, valaccount):
     addset = (300001, valaccount)
@@ -98,7 +98,7 @@ class InfraDatabase(object):
     getset = (300001, valaccount)
     addset = (300001, valaccount)
     return self.ExecuteReturn("GetSecurityAccount", getset, "AddSecurityAccount", addset)
-# ABOVE FINISHED in Jan. 29 '15, for SecurityAccount
+# ABOVE FINISHED in Jan. 29 '16, for SecurityAccount
 
   def AddPersonAccount(self, sequper, sequacc, idtype):
     addset = (sequper, sequacc, idtype)
@@ -127,7 +127,7 @@ class InfraDatabase(object):
     if result == 1:
       return (1, 0)
     return self.ReturnPersonAccount(sequper, sequacc, 400002)
-  def AddNominalPerson(self, valcert, valname, valaccount):
+  def AddNominalPersonAccount(self, valcert, valname, valaccount):
     (result, sequper) = self.ReturnPersonByIdentity(valcert, valname)
     if result == 1:
       return (1, 0)
@@ -136,6 +136,11 @@ class InfraDatabase(object):
       return (1, 0)
     return self.ReturnPersonAccount(sequper, sequacc, 400003)
 
+  def QueryPersonAccount(self, valcert): # by Identiry and OTC account
+    queryset = (200001, valcert)
+    result = self.Query("QueryAccountByIdentiry", queryset)
+    return result[0]
+# ABOVE FINISHED in Feb. 01 '16, for SecurityAccount
 
 
 

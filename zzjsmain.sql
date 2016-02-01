@@ -114,7 +114,7 @@ BEGIN
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
--- ABOVE FINISHED in Jan. 27 '15, for NaturalPerson
+-- ABOVE FINISHED in Jan. 27 '16, for NaturalPerson
 
 INSERT INTO `SystemField` 
   (`idField`, `descField`, `valueField`) 
@@ -159,7 +159,7 @@ BEGIN
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END $
--- ABOVE FINISHED in Jan. 27 '15, for LegalPerson
+-- ABOVE FINISHED in Jan. 27 '16, for LegalPerson
 
 INSERT INTO `SystemClass` 
   (`idClass`, `valueClass`, `startClass`) 
@@ -240,7 +240,7 @@ BEGIN
     SA.valueAccount = valaccount AND
     BA.sequAccount = SA.sequAccount;
 END; $
--- ABOVE FINISHED in Jan. 29 '15, for SecurityAccount
+-- ABOVE FINISHED in Jan. 29 '16, for SecurityAccount
 
 INSERT INTO `SystemField` 
   (`idField`, `descField`, `valueField`)
@@ -285,8 +285,20 @@ BEGIN
     BPA.sequAccount = sequacc;
 END; $
 
-
-
+DELIMITER $
+CREATE PROCEDURE `QueryAccountByIdentiry`
+  (IN idcert INT(11), IN valcert VARCHAR(32))
+BEGIN
+  SELECT
+    BPA.sequPersonAccount, BPA.sequPerson, BPA.sequAccount, BPA.idAccountType
+  FROM
+    BasePersonAccount BPA, BaseCertificate BC
+  WHERE
+    BPA.sequPerson = BC.sequPerson AND
+    BC.idCertificate = idcert AND
+    BC.valueCertificate = vercert
+END $
+-- ABOVE FINISHED in Feb. 01 '16, for SecurityAccount
 
 
 
@@ -346,17 +358,7 @@ BEGIN
   WHERE idPerson = personsequ AND idAccount = accountsequ;
 END $
 
-DELIMITER $
-CREATE PROCEDURE `QueryAccountByIdentiry`
-  (IN personid VARCHAR(32))
-BEGIN
-  SELECT SA.idMarket, SA.valueAccount
-  FROM `SecurityAccount` SA
-  WHERE SA.idAccount IN (
-    SELECT RPA.idAccount
-    FROM `RelationPersonAccount` RPA, `BaseCertificate` BC
-    WHERE RPA.idPerson = BC.idPerson AND BC.valueCertificate = personid );
-END $
+
 
 
 
