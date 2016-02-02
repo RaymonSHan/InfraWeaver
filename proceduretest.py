@@ -7,12 +7,12 @@ if __name__ == '__main__':
 #  infra = InfraDatabase('root', 'root', '127.0.0.1')
   infra = InfraDatabase('root', '', '192.168.206.139')
 
-  vcert = "213322200011223255"
-  result = infra.QueryPersonAccount(vcert)
-  print result
+#### OKED, start Feb. 02 `16
+'''
 
+'''
 
-#### OKED
+#### REWRITE ONCE, STOPPED Feb. 02 `16
 '''
   vcert = "113322200011223255"
   vname = "王五"

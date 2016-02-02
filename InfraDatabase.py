@@ -25,11 +25,11 @@ class InfraDatabase(object):
       executecursor.callproc(procedure, parameter)
       for executeresult in executecursor.stored_results():
         result = executeresult.fetchone()
-      return result
     except Exception as e:
       print(e)
     finally:
       executecursor.close()
+    return result
   def Query(self, procedure, parameter):
     try:
       executecursor = self.GetCursor()
@@ -37,11 +37,11 @@ class InfraDatabase(object):
       result = []
       for executeresult in executecursor.stored_results():
         result.append( executeresult.fetchall() )
-      return result
     except Exception as e:
       print(e)
     finally:
       executecursor.close()
+    return result
 
   def ExecuteAdd(self, addproc, addpara):
     resultset =  self.Execute(addproc, addpara)
