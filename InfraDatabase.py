@@ -11,7 +11,6 @@ class InfraDatabase(object):
       self.ConnectSQL = mysql.connector.connect(user=username, password=password, host=hostip, database='InfraWeaver')
     except Exception as e:  
       print(e)
-
   def __del__(self):
     try:
       self.ConnectSQL.close()
@@ -20,17 +19,17 @@ class InfraDatabase(object):
 
   def GetCursor(self):
     return self.ConnectSQL.cursor()
-
   def Execute(self, procedure, parameter):
     try:
       executecursor = self.GetCursor()
       executecursor.callproc(procedure, parameter)
       for executeresult in executecursor.stored_results():
         result = executeresult.fetchone()
-      executecursor.close()
       return result
     except Exception as e:
       print(e)
+    finally:
+      executecursor.close()
   def Query(self, procedure, parameter):
     try:
       executecursor = self.GetCursor()
@@ -38,10 +37,11 @@ class InfraDatabase(object):
       result = []
       for executeresult in executecursor.stored_results():
         result.append( executeresult.fetchall() )
-      executecursor.close()
       return result
     except Exception as e:
       print(e)
+    finally:
+      executecursor.close()
 
   def ExecuteAdd(self, addproc, addpara):
     resultset =  self.Execute(addproc, addpara)
@@ -62,6 +62,8 @@ class InfraDatabase(object):
     else:
       return (result, personid)
 
+
+class InfraDatabase_old(object):
   def AddPersonByIdentity(self, valcert, valname):
     (valsex, valbirth) = AnalyzePersonIdentity(valcert, valname)
     addset = (200001, valcert, valname, valsex, valbirth)
@@ -145,7 +147,7 @@ class InfraDatabase(object):
 
 
 
-class InfraDatabase_old(object):
+
   def QueryAccountByIdentiry(self, personid):
     return self.Query("AccountByIdentiry", (personid,))
 

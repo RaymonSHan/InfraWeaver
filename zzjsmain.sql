@@ -1,26 +1,55 @@
 
-CREATE SCHEMA `InfraWeaver` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
+CREATE SCHEMA `InfraWeaver` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;
 
-CREATE TABLE IF NOT EXISTS `SystemClass` (
-  `idClass` INT(11) UNSIGNED NOT NULL,
+DROP TABLE IF EXISTS `SystemClass`;
+CREATE TABLE `SystemClass` (
+  `idClass` INT(11) NOT NULL,
   `valueClass` VARCHAR(256) NULL,
-  `startClass` INT(11) UNSIGNED NOT NULL,
+  `startClass` INT(11) NOT NULL,
   PRIMARY KEY (`idClass`))
 COMMENT='类别信息表';
 
-CREATE TABLE IF NOT EXISTS `SystemField` (
-  `idField` INT(11) UNSIGNED NOT NULL,
+DROP TABLE IF EXISTS `SystemField`;
+CREATE TABLE `SystemField` (
+  `idField` INT(11) NOT NULL,
   `descField` VARCHAR(32) NOT NULL,
   `valueField` VARCHAR(256) NOT NULL,
   PRIMARY KEY (`idField`))
 COMMENT='属性信息表';
+
+DROP TABLE IF EXISTS `BasePerson`;
+CREATE TABLE `BasePerson` (
+  `sequPerson` BIGINT  NOT NULL,
+  `idClass` INT(11) NOT NULL,
+  PRIMARY KEY (`sequPerson`))
+COMMENT='人信息基本表';
+
+DROP TABLE IF EXISTS `BaseAccount`;
+CREATE TABLE `BaseAccount` (
+  `sequAccount` BIGINT NOT NULL,
+  `idClass` INT(11) NOT NULL,
+  PRIMARY KEY (`sequAccount`))
+COMMENT='帐号基本表';
+
+DROP TABLE IF EXISTS `BaseCertificate`;
+CREATE TABLE `BaseCertificate` (
+  `sequCertificate` BIGINT NOT NULL,
+  `idCertificate` INT(11) NOT NULL,
+  `valueCertificate` VARCHAR(32) NOT NULL,
+  `valueName` VARCHAR(256) NOT NULL,
+  PRIMARY KEY (`sequCertificate`),
+  UNIQUE `baseCertificate_INDEX` (`valueCertificate` ASC, `idCertificate` ASC))
+COMMENT='证件信息基本表';
 
 INSERT INTO `SystemClass` 
   (`idClass`, `valueClass`, `startClass`) 
 VALUES
   (1, '自然人类别', 0),
   (2, '法人类别', 0),
-  (3, '产品持有类别', 0);
+  (3, '产品持有类别', 0),
+  (1001, '证券帐户', 0),
+  (1002, '资金帐户', 0),
+  (1003, '银行帐户', 0);
 
 INSERT INTO `SystemField` 
   (`idField`, `descField`, `valueField`) 
@@ -29,66 +58,47 @@ VALUES
   (100002, 'idSex', '女'),
   (200001, 'idCertificate', '身份证'),
   (200002, 'idCertificate', '护照');
-
-CREATE TABLE IF NOT EXISTS `BasePerson` (
-  `sequPerson` BIGINT  UNSIGNED NOT NULL,
-  `idClass` INT(11) UNSIGNED NOT NULL,
-  PRIMARY KEY (`sequPerson`))
-COMMENT='人信息基本表';
-
-CREATE TABLE IF NOT EXISTS `NaturalPerson` (
-  `sequPerson` BIGINT UNSIGNED NOT NULL,
-  `valueName` VARCHAR(256) NOT NULL,
-  `idSex` INT(11) UNSIGNED NOT NULL,
-  `valueBirthday` VARCHAR(32) NOT NULL,
-  PRIMARY KEY (`sequPerson`),
-  CONSTRAINT `fk_NaturalPerson` 
-    FOREIGN KEY (`sequPerson`)
-    REFERENCES `BasePerson` (`sequPerson`)
-    ON DELETE NO ACTION 
-    ON UPDATE NO ACTION)
-COMMENT='自然人信息表';
-
-CREATE TABLE IF NOT EXISTS `BaseCertificate` (
-  `idCertificate` INT(11) UNSIGNED NOT NULL,
-  `valueCertificate` VARCHAR(32) NOT NULL,
-  `valueName` VARCHAR(256) NOT NULL,
-  `sequPerson` BIGINT UNSIGNED NOT NULL,
-  UNIQUE `baseCertificate_INDEX` (`valueCertificate` ASC, `idCertificate` ASC))
-COMMENT='证件信息基本表';
-
-CREATE VIEW `NaturalPersonView` AS
-  SELECT
-    BP.idClass,
-    NP.sequPerson, NP.valueName, NP.idSex, NP.valueBirthday
-  FROM
-    NaturalPerson NP, BasePerson BP
-  WHERE
-    NP.sequPerson = BP.sequPerson;
+-- STEP 01, create base table, Feb. 02 '16
 
 DELIMITER $
-CREATE PROCEDURE `__AddBasePerson` (
-  IN idclass INT(11),
-  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
-  INOUT sequperson BIGINT )
+DROP PROCEDURE IF EXISTS `AddBasePerson`; $
+CREATE PROCEDURE `AddBasePerson` (IN idclass INT(11))
 BEGIN
-  IF sequperson = 0 THEN
-    SET @sequ = uuid_short();
-    INSERT INTO `BasePerson` (`sequPerson`, `idClass`) 
-      VALUES (@sequ, idclass);
-  ELSE
-    -- should check whether sequperson is valid
-    SET @sequ = sequperson;
-  END IF;
-  SET sequperson = 0;
-  INSERT INTO `BaseCertificate` (`idCertificate`, `valueCertificate`, `valueName`, `sequPerson`)
-    VALUES (idcert, valcert, valname, @sequ);
-  SET sequperson = @sequ;
+  SET @sequ = uuid_short();
+  INSERT INTO `BasePerson` (`sequPerson`, `idClass`) 
+    VALUES (@sequ, idclass);
+  SELECT 0, @sequ;
+  COMMIT;
 END; $
 
 DELIMITER $
-CREATE PROCEDURE `GetPerson` (
-  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256) )
+DROP PROCEDURE IF EXISTS `AddBaseAccount`; $
+CREATE PROCEDURE `AddBaseAccount` (IN idclass INT(11))
+BEGIN
+  SET @sequ = uuid_short();
+  INSERT INTO `BaseAccount` (`sequAccount`, `idClass`) 
+    VALUES (@sequ, idclass);
+  SELECT 0, @sequ;
+  COMMIT;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `AddBaseCertificate`; $
+CREATE PROCEDURE `AddBaseCertificate` (
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256))
+BEGIN
+  SET @sequ = uuid_short();
+  INSERT INTO `BaseCertificate` 
+    (`sequCertificate`, `idCertificate`, `valueCertificate`, `valueName`)
+    VALUES (@sequ, idcert, valcert, valname);
+  SELECT 0, @sequ;
+  COMMIT;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `GetBaseCertificate`; $
+CREATE PROCEDURE `GetBaseCertificate` (
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256))
 BEGIN
   SELECT
     IF (valname = BC.valueName, 0, 1) AS result,
@@ -101,6 +111,33 @@ BEGIN
     BC.valueCertificate = valcert AND
     BC.sequPerson = BP.sequPerson;
 END; $
+-- STEP 02, create base procedure, Feb. 02 '16
+
+
+
+DROP TABLE IF EXISTS `NaturalPerson`;
+CREATE TABLE `NaturalPerson` (
+  `sequPerson` BIGINT NOT NULL,
+  `valueName` VARCHAR(256) NOT NULL,
+  `idSex` INT(11) NOT NULL,
+  `valueBirthday` VARCHAR(32) NOT NULL,
+  PRIMARY KEY (`sequPerson`),
+  CONSTRAINT `fk_NaturalPerson` 
+    FOREIGN KEY (`sequPerson`)
+    REFERENCES `BasePerson` (`sequPerson`)
+    ON DELETE NO ACTION 
+    ON UPDATE NO ACTION)
+COMMENT='自然人信息表';
+
+DROP VIEW IF EXISTS `NaturalPersonView`;
+CREATE VIEW `NaturalPersonView` AS
+  SELECT
+    BP.idClass,
+    NP.sequPerson, NP.valueName, NP.idSex, NP.valueBirthday
+  FROM
+    NaturalPerson NP, BasePerson BP
+  WHERE
+    NP.sequPerson = BP.sequPerson;
 
 DELIMITER $
 CREATE PROCEDURE `AddNaturalPerson` ( 
@@ -161,12 +198,7 @@ BEGIN
 END $
 -- ABOVE FINISHED in Jan. 27 '16, for LegalPerson
 
-INSERT INTO `SystemClass` 
-  (`idClass`, `valueClass`, `startClass`) 
-VALUES
-  (1001, '证券帐户', 0),
-  (1002, '资金帐户', 0),
-  (1003, '银行帐户', 0);
+
 
 INSERT INTO `SystemField` 
   (`idField`, `descField`, `valueField`)
@@ -174,11 +206,7 @@ VALUES
   (300001, 'idMarket', '报价系统'),
   (300002, 'idMarket', '场外一卡通');
 
-CREATE TABLE IF NOT EXISTS `BaseAccount` (
-  `sequAccount` BIGINT UNSIGNED NOT NULL,
-  `idClass` INT(11) UNSIGNED NOT NULL,
-  PRIMARY KEY (`sequAccount`))
-COMMENT='帐号基本表';
+
 
 CREATE TABLE IF NOT EXISTS `SecurityAccount` (
   `sequAccount` BIGINT UNSIGNED NOT NULL,
