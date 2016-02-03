@@ -6,6 +6,12 @@ from InfraDatabase import InfraDatabase
 if __name__ == '__main__':
 #  infra = InfraDatabase('root', 'root', '127.0.0.1')
   infra = InfraDatabase('root', '', '192.168.206.139')
+  vcert = "123322200011223299"
+  vname = "王五"
+  vacc = "006225588139"
+
+  (result, sequ) = infra.AddPrimaryAccountByIdentity(vcert, vname, vacc)
+  print result, sequ
 
 #### OKED, start Feb. 02 `16
 '''

@@ -62,6 +62,22 @@ class InfraDatabase(object):
     else:
       return (result, personid)
 
+  def AddHolder(self, procper, paraper, proccert, paracert, procacc, paraacc):
+    (resultp, sequper) = self.ExecuteAdd(procper, paraper)
+    (resultc, sequcert) = self.ExecuteAdd(proccert, paracert)
+    (resulta, sequacc) = self.ExecuteAdd(procacc, paraacc)
+    if resultp + resultc + resulta == 0:
+      return self.ExecuteAdd("AddBaseHolder", (sequper, sequcert, sequacc))
+    else:
+      return (1, 0)
+
+  def AddPrimaryAccountByIdentity(self, valcert, valname, valaccount):
+    paraper = AnalyzePersonIdentity(valcert, valname)
+    paracert = (valcert, valname)
+    paraacc = (ID_MARKET_INTEROTC, valaccount, ID_TYPE_PRIMARY)
+    return self.AddHolder("AddNaturalPerson", paraper, "AddIdentityCard", paracert, "AddSecurityAccount", paraacc)
+# STEP 04, first python procedure, Feb. 03 '16
+
 
 class InfraDatabase_old(object):
   def AddPersonByIdentity(self, valcert, valname):

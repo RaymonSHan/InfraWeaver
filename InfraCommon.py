@@ -22,6 +22,10 @@ ID_CERTIFICATE_COMMERCIAL       = 200103
 ID_MARKET_INTEROTC              = 300001
 ID_MARKET_OTCCOMMON             = 300002
 
+ID_TYPE_PRIMARY                 = 400001
+ID_TYPE_SECONDRY                = 400002
+ID_TYPE_NOMINAL                 = 400003
+
 def AnalyzePersonIdentity(valcert, valname):
   if string.atoi(valcert[16:17]) % 2 == 0:
     valsex = 100002

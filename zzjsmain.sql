@@ -62,7 +62,10 @@ VALUES
   (200102, 'idCertificate', '税务登记号'),
   (200103, 'idCertificate', '工商注册号'),
   (300001, 'idMarket', '报价系统'),
-  (300002, 'idMarket', '场外一卡通');
+  (300002, 'idMarket', '场外一卡通'),
+  (400001, 'idAccountType', '个人主帐号'),
+  (400002, 'idAccountType', '个人附加帐号'),
+  (400003, 'idAccountType', '名义持有帐号');
 -- STEP 01, create base table, Feb. 02 '16
 
 DELIMITER $
@@ -75,7 +78,6 @@ BEGIN
   INSERT INTO `BasePerson` (`sequPerson`, `idClass`) 
     VALUES (@sequ, idclass);
   SET sequper = @sequ;
-  COMMIT;
 END; $
 
 DELIMITER $
@@ -88,7 +90,6 @@ BEGIN
   INSERT INTO `BaseAccount` (`sequAccount`, `idClass`) 
     VALUES (@sequ, idclass);
   SET sequacc = @sequ;
-  COMMIT;
 END; $
 
 DELIMITER $
@@ -103,7 +104,6 @@ BEGIN
     (`sequCertificate`, `idCertificate`, `valueCertificate`, `valueName`)
     VALUES (@sequ, idcert, valcert, valname);
   SET sequcert = @sequ;
-  COMMIT;
 END; $
 
 DELIMITER $
@@ -127,7 +127,6 @@ END; $
 DROP TABLE IF EXISTS `NaturalPerson`;
 CREATE TABLE `NaturalPerson` (
   `sequPerson` BIGINT NOT NULL,
-  `valueName` VARCHAR(256) NOT NULL,
   `idSex` INT(11) NOT NULL,
   `valueBirthday` VARCHAR(32) NOT NULL,
   PRIMARY KEY (`sequPerson`),
@@ -152,6 +151,21 @@ CREATE TABLE `LegalPerson` (
     ON UPDATE NO ACTION)
 COMMENT='法人信息表';
 
+DROP TABLE IF EXISTS `SecurityAccount`;
+CREATE TABLE `SecurityAccount` (
+  `sequAccount` BIGINT NOT NULL,
+  `idMarket` INT(11) NOT NULL,
+  `valueAccount` VARCHAR(32) NOT NULL,
+  `idAccountType` INT(11) NOT NULL,
+  PRIMARY KEY (`sequAccount`),
+  UNIQUE `indexvalAccount` (`valueAccount` ASC, `idMarket` ASC),
+  CONSTRAINT `fk_SecurityAccount`
+    FOREIGN KEY (`sequAccount`)
+    REFERENCES `BaseAccount` (`sequAccount`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COMMENT='证券账户表';
+
 DROP VIEW IF EXISTS `NaturalPersonView`;
 CREATE VIEW `NaturalPersonView` AS
   SELECT
@@ -173,163 +187,96 @@ CREATE VIEW `LegalPersonView` AS
   WHERE
     LP.sequPerson = BP.sequPerson;
 
-
-
-
-
-
-
-
-
-DELIMITER $
-DROP PROCEDURE IF EXISTS `AddNaturalPerson`; $
-CREATE PROCEDURE `AddNaturalPerson` ( 
-  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
-  IN valsex INT(11), IN valbirth VARCHAR(32) )
-BEGIN
-  SET @sequ = 0;
-  CALL __AddBasePerson(1, idcert, valcert, valname, @sequ);
-  INSERT INTO `NaturalPerson` (`sequPerson`, `valueName`, `idSex`, `valueBirthday`)
-    VALUES (@sequ, valname, valsex, valbirth);
-  SELECT 0, @sequ;  -- 0 for success
-  COMMIT;
-END; $
--- ABOVE FINISHED in Jan. 27 '16, for NaturalPerson
-
-DELIMITER $
-DROP PROCEDURE IF EXISTS `AddLegalPerson`; $
-CREATE PROCEDURE `AddLegalPerson` (
-  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256), 
-  IN sequrepr BIGINT, IN valcapital VARCHAR(32) )
-BEGIN
-  SET @sequ = 0;
-  CALL __AddBasePerson(1, idcert, valcert, valname, @sequ);
-  INSERT INTO `LegalPerson` (`sequPerson`, `sequRepresentative`, `valueCapital`)
-    VALUES (@sequ, sequrepr, valcapital);
-  SELECT 0, @sequ;  -- 0 for success
-  COMMIT;
-END $
--- ABOVE FINISHED in Jan. 27 '16, for LegalPerson
-
-CREATE TABLE IF NOT EXISTS `SecurityAccount` (
-  `sequAccount` BIGINT UNSIGNED NOT NULL,
-  `idMarket` INT(11) UNSIGNED NOT NULL,
-  `valueAccount` VARCHAR(32) NOT NULL,
-  PRIMARY KEY (`sequAccount`),
-  UNIQUE `indexvalAccount` (`valueAccount` ASC, `idMarket` ASC),
-  CONSTRAINT `fk_SecurityAccount`
-    FOREIGN KEY (`sequAccount`)
-    REFERENCES `BaseAccount` (`sequAccount`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-COMMENT='证券账户表';
-
+DROP VIEW IF EXISTS `SecurityAccountView`;
 CREATE VIEW `SecurityAccountView` AS
   SELECT
     BA.idClass,
-    SA.sequAccount, SA.idMarket, SA.valueAccount
+    SA.sequAccount, SA.idMarket, SA.valueAccount, SA.idAccountType
   FROM
     SecurityAccount SA,
     BaseAccount BA
   WHERE
     SA.sequAccount = BA.sequAccount;
 
+DROP TABLE IF EXISTS `BaseHolder`;
+CREATE TABLE `BaseHolder` (
+  `sequHolder` BIGINT NOT NULL,
+  `sequPerson` BIGINT NOT NULL,
+  `sequCertificate` BIGINT NOT NULL,
+  `sequAccount` BIGINT NOT NULL,
+  PRIMARY KEY (`sequHolder`),
+  INDEX `indexPerson` (`sequPerson` ASC),
+  INDEX `indexCertificate` (`sequCertificate` ASC),
+  INDEX `indexAccount` (`sequAccount` ASC),
+  UNIQUE `indexPersonAccount` (`sequPerson` ASC, `sequCertificate` ASC, `sequAccount` ASC))
+COMMENT='持有关系表';
+
 DELIMITER $
-CREATE PROCEDURE `__AddBaseAccount` (
-  IN idclass INT(11), OUT sequacc BIGINT )
+DROP PROCEDURE IF EXISTS `AddNaturalPerson`; $
+CREATE PROCEDURE `AddNaturalPerson` ( 
+  IN valsex INT(11), IN valbirth VARCHAR(32) )
 BEGIN
-  SET @sequ = uuid_short();
-  SET sequacc = 0;
-  INSERT INTO `BaseAccount` (`sequAccount`, `idClass`) 
-    VALUES (@sequ, idclass);
-  SET sequacc = @sequ;
+  SET @sequ = 0;
+  CALL __AddBasePerson(1, @sequ);
+  INSERT INTO `NaturalPerson` (`sequPerson`, `idSex`, `valueBirthday`)
+    VALUES (@sequ, valsex, valbirth);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
 END; $
 
 DELIMITER $
+DROP PROCEDURE IF EXISTS `AddLegalPerson`; $
+CREATE PROCEDURE `AddLegalPerson` (
+  IN sequrepr BIGINT, IN valcapital VARCHAR(32) )
+BEGIN
+  SET @sequ = 0;
+  CALL __AddBasePerson(2, @sequ);
+  INSERT INTO `LegalPerson` (`sequPerson`, `sequRepresentative`, `valueCapital`)
+    VALUES (@sequ, sequrepr, valcapital);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `AddIdentityCard`; $
+CREATE PROCEDURE `AddIdentityCard` (
+  IN valcert VARCHAR(32), IN valname VARCHAR(256))
+BEGIN
+  SET @sequ = 0;
+  CALL __AddBaseCertificate(200001, valcert, valname, @sequ);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `AddSecurityAccount`; $
 CREATE PROCEDURE `AddSecurityAccount` (
-  IN idmarket INT(11), IN valaccount VARCHAR(32))
+  IN idmarket INT(11), IN valaccount VARCHAR(32), IN idtype INT(11))
 BEGIN
   SET @sequ = 0;
   CALL __AddBaseAccount(1001, @sequ);
-  INSERT INTO `SecurityAccount` (`sequAccount`, `idMarket`, `valueAccount`)
-    VALUES (@sequ, idmarket, valaccount);
+  INSERT INTO `SecurityAccount` (`sequAccount`, `idMarket`, `valueAccount`, `idAccountType`)
+    VALUES (@sequ, idmarket, valaccount, idtype);
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
 
 DELIMITER $
-CREATE PROCEDURE `GetSecurityAccount` (
-  IN idmarket INT(11), IN valaccount VARCHAR(32))
-BEGIN
-  SELECT
-    0, BA.sequAccount
-  FROM
-    BaseAccount BA,
-    SecurityAccount SA
-  WHERE
-    SA.idMarket = idmarket AND
-    SA.valueAccount = valaccount AND
-    BA.sequAccount = SA.sequAccount;
-END; $
--- ABOVE FINISHED in Jan. 29 '16, for SecurityAccount
-
-INSERT INTO `SystemField` 
-  (`idField`, `descField`, `valueField`)
-VALUES
-  (400001, 'idAccountType', '个人主帐号'),
-  (400002, 'idAccountType', '个人附加帐号'),
-  (400003, 'idAccountType', '实际持有人');
-
-CREATE TABLE IF NOT EXISTS `BasePersonAccount` (
-  `sequPersonAccount` BIGINT UNSIGNED NOT NULL,
-  `sequPerson` BIGINT UNSIGNED NOT NULL,
-  `sequAccount` BIGINT UNSIGNED NOT NULL,
-  `idAccountType` INT(11) UNSIGNED NOT NULL,
-  PRIMARY KEY (`sequPersonAccount`),
-  INDEX `indexPerson` (`sequPerson` ASC),
-  INDEX `indexAccount` (`sequAccount` ASC),
-  UNIQUE `indexPersonAccount` (`sequPerson` ASC, `sequAccount` ASC))
-COMMENT='人员帐户关系表';
-
-DELIMITER $
-CREATE PROCEDURE `AddPersonAccount` (
-  IN sequper BIGINT, IN sequacc BIGINT, IN idtype INT(11))
+DROP PROCEDURE IF EXISTS `AddBaseHolder`; $
+CREATE PROCEDURE `AddBaseHolder` (
+  IN sequper BIGINT, IN sequcert BIGINT, IN sequacc BIGINT)
 BEGIN
   SET @sequ = uuid_short();
-  INSERT INTO `BasePersonAccount` (`sequPersonAccount`, `sequPerson`, `sequAccount`, `idAccountType`)
-    VALUES (@sequ, sequper, sequacc, idtype);
+  INSERT INTO `BaseHolder` (`sequHolder`, `sequPerson`, `sequCertificate`, `sequAccount`)
+    VALUES (@sequ, sequper, sequcert, sequacc);
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
+-- STEP 03, create procedure, Feb. 03 '16
 
-DELIMITER $
-CREATE PROCEDURE `GetPersonAccount` (
-  IN sequper BIGINT, IN sequacc BIGINT, IN idtype INT(11))
-BEGIN
-  SELECT
-    IF (idtype = BPA.idAccountType, 0, 1) AS result,
-    BPA.sequPersonAccount
-  FROM
-    BasePersonAccount BPA
-  WHERE
-    BPA.sequPerson = sequper AND
-    BPA.sequAccount = sequacc;
-END; $
 
-DELIMITER $
-CREATE PROCEDURE `QueryAccountByIdentiry`
-  (IN idcert INT(11), IN valcert VARCHAR(32))
-BEGIN
-  SELECT
-    BPA.sequPersonAccount, BPA.sequPerson, BPA.sequAccount, BPA.idAccountType
-  FROM
-    BasePersonAccount BPA, BaseCertificate BC
-  WHERE
-    BPA.sequPerson = BC.sequPerson AND
-    BC.idCertificate = idcert AND
-    BC.valueCertificate = vercert
-END $
--- ABOVE FINISHED in Feb. 01 '16, for SecurityAccount
+
+
 
 CREATE TABLE IF NOT EXISTS `BaseProdure` (
   `idProdure` BIGINT UNSIGNED NOT NULL,
@@ -344,60 +291,28 @@ CREATE TABLE IF NOT EXISTS `BaseProdure` (
   PRIMARY KEY (`idProdure`))
 COMMENT = '产品信息基本表';
 
-INSERT INTO `SystemClass` (`idClass`, `valueClass`, `startClass`) VALUES
-(5100, '资产管理类', 0),
-(5101, '集合计划', 0),
-(5103, '定向计划', 0),
-(5104, '专项计划', 0),
-(5200, '债务融资工具类', 0),
-(5201, '中小企业私募债', 0),
-(5202, '次级债', 0),
-(5203, '非公开发行公司债', 0),
-(5300, '私募股权类', 0),
-(5400, '衍生品类', 0),
-(5402, '期权', 0),
-(5403, '互换', 0),
-(5406, '远期', 0),
-(5407, '结构化衍生品', 0),
-(5500, '资产支持证券类', 0),
-(5501, '资产支持证券', 0),
-(5600, '私募基金类', 0),
-(5601, '私募股权投资基金', 0),
-(5602, '私募证券投资基金', 0),
-(5700, '收益凭证类', 0),
-(5800, '其他类型', 0);
+INSERT INTO 
+  `SystemClass` (`idClass`, `valueClass`, `startClass`)
+VALUES
+  (5100, '资产管理类', 0),
+  (5101, '集合计划', 0),
+  (5103, '定向计划', 0),
+  (5104, '专项计划', 0),
+  (5200, '债务融资工具类', 0),
+  (5201, '中小企业私募债', 0),
+  (5202, '次级债', 0),
+  (5203, '非公开发行公司债', 0),
+  (5300, '私募股权类', 0),
+  (5400, '衍生品类', 0),
+  (5402, '期权', 0),
+  (5403, '互换', 0),
+  (5406, '远期', 0),
+  (5407, '结构化衍生品', 0),
+  (5500, '资产支持证券类', 0),
+  (5501, '资产支持证券', 0),
+  (5600, '私募基金类', 0),
+  (5601, '私募股权投资基金', 0),
+  (5602, '私募证券投资基金', 0),
+  (5700, '收益凭证类', 0),
+  (5800, '其他类型', 0);
 
-DELIMITER $
-CREATE PROCEDURE `AddRelationPersonAccount` -- 增加人员帐户关系
-  (IN personsequ BIGINT, IN accountsequ BIGINT)
-BEGIN
-  SET @sequ = uuid_short();
-  INSERT INTO `RelationPersonAccount` (`RePersonAccount`, `idPerson`, `idAccount`)
-    VALUES (@sequ, personsequ, accountsequ);
-  SELECT 0, @sequ;  -- 0 for success
-  COMMIT;
-END $
-
-DELIMITER $
-CREATE PROCEDURE `GetRelationPersonAccount`
-  (IN personsequ BIGINT, IN accountsequ BIGINT)
-BEGIN
-  SELECT 0, RePersonAccount
-  FROM RelationPersonAccount
-  WHERE idPerson = personsequ AND idAccount = accountsequ;
-END $
-
-DELIMITER $ -- NOT FINISH
-CREATE FUNCTION `IsValidIdentity` 
-  (personid VARCHAR(45))
-RETURNS INT
-BEGIN
-  IF LENGTH(personid) != 18 THEN
-    RETURN 1;
-  END IF;
-  SET @ofday = MONTH(SUBSTRING(personid, 7, 8) );
-  IF @ofday = NULL THEN
-    RETURN 2;
-  END IF;
-  RETURN 0;
-END $ -- NOT FINISH
