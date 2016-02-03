@@ -170,7 +170,7 @@ DROP VIEW IF EXISTS `NaturalPersonView`;
 CREATE VIEW `NaturalPersonView` AS
   SELECT
     BP.idClass,
-    NP.sequPerson, NP.valueName, NP.idSex, NP.valueBirthday
+    NP.sequPerson, NP.idSex, NP.valueBirthday
   FROM
     NaturalPerson NP, BasePerson BP
   WHERE
@@ -272,22 +272,31 @@ BEGIN
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
+
+DROP VIEW IF EXISTS `SecurityHolderView`;
+CREATE VIEW `SecurityHolderView` AS
+  SELECT
+    BC.idCertificate, BC.valueCertificate, BC.valueName,
+    SA.idMarket, SA.valueAccount, SA.idAccountType
+  FROM
+    BaseHolder BH, BasePerson BP, BaseCertificate BC, BaseAccount BA,
+    SecurityAccount SA
+  WHERE
+    BH.sequPerson = BP.sequPerson AND
+    BH.sequCertificate = BC.sequCertificate AND
+    BH.sequAccount = BA.sequAccount AND
+    BH.sequAccount = SA.sequAccount;
 -- STEP 03, create procedure, Feb. 03 '16
 
-
-
-
-
 CREATE TABLE IF NOT EXISTS `BaseProdure` (
-  `idProdure` BIGINT UNSIGNED NOT NULL,
-  `idClass` INT(11) UNSIGNED NOT NULL,
+  `idProdure` BIGINT NOT NULL,
+  `idClass` INT(11) NOT NULL,
   `valueName` VARCHAR(256) NOT NULL,
   `valueShortname` VARCHAR(32) NULL,
   `valueCode` VARCHAR(32) NULL,
-  `idConsignee` BIGINT UNSIGNED NOT NULL COMMENT '承销人，应在ParticipantPerson中',
-  `valueOthers` VARCHAR(32) NULL,
-  `valueNumberLimit` INT(11) NULL,
-  `valueNumberNow` INT(11) NULL,
+  `idConsignee` BIGINT NULL COMMENT '承销人，应在ParticipantPerson中',
+  `valueNumberLimit` INT(11) UNSIGNED NULL,
+  `valueNumberNow` INT(11) UNSIGNED NULL,
   PRIMARY KEY (`idProdure`))
 COMMENT = '产品信息基本表';
 
