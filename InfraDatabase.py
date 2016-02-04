@@ -76,4 +76,7 @@ class InfraDatabase(object):
     paracert = (valcert, valname)
     paraacc = (idmarket, valaccount, idtype)
     return self.AddHolder("AddNaturalPerson", paraper, "AddIdentityCard", paracert, "AddSecurityAccount", paraacc)
-# STEP 04, first python procedure, Feb. 03 '16
+
+  def AddPrivateProdureSimple(self, valname, valcode, vallimit):
+    addpara = (CLASS_PRIVATE_STOCK, valname, "", valcode, 0, vallimit)
+    return self.ExecuteAdd("AddPrivateProdure", addpara)

@@ -8,6 +8,7 @@ if __name__ == '__main__':
 #  infra = InfraDatabase('root', 'root', '127.0.0.1')
   infra = InfraDatabase('root', '', '192.168.206.139')
 
+  (result, sequ) = infra.AddPrivateProdureSimple("testname", "S00333", 200)
   print result, sequ
 
 #### OKED

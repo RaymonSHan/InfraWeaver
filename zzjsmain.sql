@@ -288,17 +288,40 @@ CREATE VIEW `SecurityHolderView` AS
     BH.sequAccount = SA.sequAccount;
 -- STEP 03, create procedure, Feb. 03 '16
 
-CREATE TABLE IF NOT EXISTS `BaseProdure` (
-  `idProdure` BIGINT NOT NULL,
+DROP TABLE IF EXISTS `BaseProdure`;
+CREATE TABLE `BaseProdure` (
+  `sequProdure` BIGINT NOT NULL,
   `idClass` INT(11) NOT NULL,
+  PRIMARY KEY (`sequProdure`))
+COMMENT = '产品信息基本表';
+
+DROP TABLE IF EXISTS `PrivateProdure`;
+CREATE TABLE `PrivateProdure` (
+  `sequProdure` BIGINT NOT NULL,
   `valueName` VARCHAR(256) NOT NULL,
   `valueShortname` VARCHAR(32) NULL,
-  `valueCode` VARCHAR(32) NULL,
-  `idConsignee` BIGINT NULL COMMENT '承销人，应在ParticipantPerson中',
-  `valueNumberLimit` INT(11) UNSIGNED NULL,
-  `valueNumberNow` INT(11) UNSIGNED NULL,
-  PRIMARY KEY (`idProdure`))
-COMMENT = '产品信息基本表';
+  `valueCode` VARCHAR(32) NOT NULL,
+  `sequConsignee` BIGINT NULL COMMENT '承销人',
+  `valueNumberLimit` INT(11) UNSIGNED NOT NULL,
+  PRIMARY KEY (`sequProdure`),
+  INDEX `indexCode` (`valueCode` ASC),
+  INDEX `indexConsignee` (`sequConsignee` ASC),
+  CONSTRAINT `fk_PrivateProdure`
+    FOREIGN KEY (`sequProdure`)
+    REFERENCES `BaseProdure` (`sequProdure`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+COMMENT = '私募产品信息表';
+
+DROP VIEW IF EXISTS `PrivateProdureView`;
+CREATE VIEW `PrivateProdureView` AS
+  SELECT
+    BP.idClass,
+    PP.sequProdure, PP.valueName, PP.valueShortname, PP.valueCode, PP.sequConsignee, PP.valueNumberLimit
+  FROM
+    PrivateProdure PP, BaseProdure BP
+  WHERE
+    PP.sequProdure = BP.sequProdure;
 
 INSERT INTO 
   `SystemClass` (`idClass`, `valueClass`, `startClass`)
@@ -325,3 +348,30 @@ VALUES
   (5700, '收益凭证类', 0),
   (5800, '其他类型', 0);
 
+DELIMITER $
+DROP PROCEDURE IF EXISTS `__AddBaseProdure`; $
+CREATE PROCEDURE `__AddBaseProdure` (
+  IN idclass INT(11),  OUT sequacc BIGINT)
+BEGIN
+  SET @sequ = uuid_short();
+  SET sequacc = 0;
+  INSERT INTO `BaseProdure` (`sequProdure`, `idClass`)
+    VALUES (@sequ, idclass);
+  SET sequacc = @sequ;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `AddPrivateProdure`; $
+CREATE PROCEDURE `AddPrivateProdure` (
+  IN idclass INT(11), IN valname VARCHAR(256), IN valshort VARCHAR(32), 
+  IN valcode VARCHAR(32), IN sequconsi BIGINT, IN vallimit INT(11))
+BEGIN
+  SET @sequ = 0;
+  CALL __AddBaseProdure(idclass, @sequ);
+  INSERT INTO `PrivateProdure` 
+    (`sequProdure`, `valueName`, `valueShortname`, `valueCode`, `sequConsignee`, `valueNumberLimit`)
+    VALUES (@sequ, valname, valshort, valcode, sequconsi, vallimit);
+  SELECT 0, @sequ;  -- 0 for success
+  COMMIT;
+END $
+-- STEP 04, first Basic Produre, Feb. 04 '16

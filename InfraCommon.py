@@ -10,6 +10,8 @@ CLASS_SECURITY_ACCOUNT          = 1001
 CLASS_FONDING_ACCOUNT           = 1002
 CLASS_BANK_ACCOUNT              = 1003
 
+CLASS_PRIVATE_STOCK             = 5300
+
 ID_SEX_MALE                     = 100001
 ID_SEX_FEMALE                   = 100002
 
