@@ -21,6 +21,7 @@ class InfraDatabase(object):
     return self.ConnectSQL.cursor()
   def Execute(self, procedure, parameter):
     try:
+      result = None
       executecursor = self.GetCursor()
       executecursor.callproc(procedure, parameter)
       for executeresult in executecursor.stored_results():
@@ -46,13 +47,13 @@ class InfraDatabase(object):
   def ExecuteAdd(self, addproc, addpara):
     resultset =  self.Execute(addproc, addpara)
     if resultset == None:
-      return (1, 0)  # first 1 for error in add
+      return RESULT_ERR  # first 1 for error in add
     else:
       return resultset
   def ExecuteGet(self, getproc, getpara):
     resultset = self.Execute(getproc, getpara)
     if resultset == None:
-      return (0, 0)  # first 0 for success, second 0 for not found
+      return RESULT_NOTFOUND  # first 0 for success, second 0 for not found
     else:
       return resultset
   def ExecuteReturn(self, getproc, getpara, addproc, addpara):
@@ -63,13 +64,16 @@ class InfraDatabase(object):
       return (result, personid)
 
   def AddHolder(self, procper, paraper, proccert, paracert, procacc, paraacc):
-    (resultp, sequper) = self.ExecuteAdd(procper, paraper)
     (resultc, sequcert) = self.ExecuteAdd(proccert, paracert)
+    if resultc != 0:
+      return RESULT_ERR
     (resulta, sequacc) = self.ExecuteAdd(procacc, paraacc)
-    if resultp + resultc + resulta == 0:
-      return self.ExecuteAdd("AddBaseHolder", (sequper, sequcert, sequacc))
-    else:
-      return (1, 0)
+    if resultc != 0:
+      return RESULT_ERR
+    (resultp, sequper) = self.ExecuteAdd(procper, paraper)
+    if resultp != 0:
+      return RESULT_ERR
+    return self.ExecuteAdd("AddBaseHolder", (sequper, sequcert, sequacc))
 
   def AddAccountByIdentity(self, valcert, valname, valaccount, idmarket, idtype):
     paraper = AnalyzePersonIdentity(valcert, valname)

@@ -44,28 +44,28 @@ COMMENT='证件信息基本表';
 INSERT INTO `SystemClass` 
   (`idClass`, `valueClass`, `startClass`) 
 VALUES
-  (1, '自然人类别', 0),
-  (2, '法人类别', 0),
-  (3, '产品持有类别', 0),
-  (1001, '证券帐户', 0),
-  (1002, '资金帐户', 0),
-  (1003, '银行帐户', 0);
+  (0x0001, '自然人类别', 0),
+  (0x0002, '法人类别', 0),
+  (0x0003, '产品持有类别', 0),
+  (0x1001, '证券帐户', 0),
+  (0x1002, '资金帐户', 0),
+  (0x1003, '银行帐户', 0);
 
 INSERT INTO `SystemField` 
   (`idField`, `descField`, `valueField`) 
 VALUES
-  (100001, 'idSex', '男'),
-  (100002, 'idSex', '女'),
-  (200001, 'idCertificate', '身份证'),
-  (200002, 'idCertificate', '护照'),
-  (200101, 'idCertificate', '机构代码证'),
-  (200102, 'idCertificate', '税务登记号'),
-  (200103, 'idCertificate', '工商注册号'),
-  (300001, 'idMarket', '报价系统'),
-  (300002, 'idMarket', '场外一卡通'),
-  (400001, 'idAccountType', '个人主帐号'),
-  (400002, 'idAccountType', '个人附加帐号'),
-  (400003, 'idAccountType', '名义持有帐号');
+  (0x100001, 'idSex', '男'),
+  (0x100002, 'idSex', '女'),
+  (0x200001, 'idCertificate', '身份证'),
+  (0x200002, 'idCertificate', '护照'),
+  (0x200101, 'idCertificate', '机构代码证'),
+  (0x200102, 'idCertificate', '税务登记号'),
+  (0x200103, 'idCertificate', '工商注册号'),
+  (0x300001, 'idMarket', '报价系统'),
+  (0x300002, 'idMarket', '场外一卡通'),
+  (0x400001, 'idAccountType', '个人主帐号'),
+  (0x400002, 'idAccountType', '个人附加帐号'),
+  (0x401003, 'idAccountType', '名义持有帐号');
 -- STEP 01, create base table, Feb. 02 '16
 
 DELIMITER $
@@ -217,7 +217,7 @@ CREATE PROCEDURE `AddNaturalPerson` (
   IN valsex INT(11), IN valbirth VARCHAR(32) )
 BEGIN
   SET @sequ = 0;
-  CALL __AddBasePerson(1, @sequ);
+  CALL __AddBasePerson(0x0001, @sequ);
   INSERT INTO `NaturalPerson` (`sequPerson`, `idSex`, `valueBirthday`)
     VALUES (@sequ, valsex, valbirth);
   SELECT 0, @sequ;  -- 0 for success
@@ -230,7 +230,7 @@ CREATE PROCEDURE `AddLegalPerson` (
   IN sequrepr BIGINT, IN valcapital VARCHAR(32) )
 BEGIN
   SET @sequ = 0;
-  CALL __AddBasePerson(2, @sequ);
+  CALL __AddBasePerson(0x0002, @sequ);
   INSERT INTO `LegalPerson` (`sequPerson`, `sequRepresentative`, `valueCapital`)
     VALUES (@sequ, sequrepr, valcapital);
   SELECT 0, @sequ;  -- 0 for success
@@ -243,7 +243,7 @@ CREATE PROCEDURE `AddIdentityCard` (
   IN valcert VARCHAR(32), IN valname VARCHAR(256))
 BEGIN
   SET @sequ = 0;
-  CALL __AddBaseCertificate(200001, valcert, valname, @sequ);
+  CALL __AddBaseCertificate(0x200001, valcert, valname, @sequ);
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
@@ -254,7 +254,7 @@ CREATE PROCEDURE `AddSecurityAccount` (
   IN idmarket INT(11), IN valaccount VARCHAR(32), IN idtype INT(11))
 BEGIN
   SET @sequ = 0;
-  CALL __AddBaseAccount(1001, @sequ);
+  CALL __AddBaseAccount(0x1001, @sequ);
   INSERT INTO `SecurityAccount` (`sequAccount`, `idMarket`, `valueAccount`, `idAccountType`)
     VALUES (@sequ, idmarket, valaccount, idtype);
   SELECT 0, @sequ;  -- 0 for success
@@ -273,7 +273,7 @@ BEGIN
   COMMIT;
 END; $
 
-DROP VIEW IF EXISTS `SecurityHolderView`;
+DROP VIEW IF EXISTS `SecurityHolderView`; $
 CREATE VIEW `SecurityHolderView` AS
   SELECT
     BC.idCertificate, BC.valueCertificate, BC.valueName,
@@ -326,27 +326,27 @@ CREATE VIEW `PrivateProdureView` AS
 INSERT INTO 
   `SystemClass` (`idClass`, `valueClass`, `startClass`)
 VALUES
-  (5100, '资产管理类', 0),
-  (5101, '集合计划', 0),
-  (5103, '定向计划', 0),
-  (5104, '专项计划', 0),
-  (5200, '债务融资工具类', 0),
-  (5201, '中小企业私募债', 0),
-  (5202, '次级债', 0),
-  (5203, '非公开发行公司债', 0),
-  (5300, '私募股权类', 0),
-  (5400, '衍生品类', 0),
-  (5402, '期权', 0),
-  (5403, '互换', 0),
-  (5406, '远期', 0),
-  (5407, '结构化衍生品', 0),
-  (5500, '资产支持证券类', 0),
-  (5501, '资产支持证券', 0),
-  (5600, '私募基金类', 0),
-  (5601, '私募股权投资基金', 0),
-  (5602, '私募证券投资基金', 0),
-  (5700, '收益凭证类', 0),
-  (5800, '其他类型', 0);
+  (0x5100, '资产管理类', 0),
+  (0x5101, '集合计划', 0),
+  (0x5103, '定向计划', 0),
+  (0x5104, '专项计划', 0),
+  (0x5200, '债务融资工具类', 0),
+  (0x5201, '中小企业私募债', 0),
+  (0x5202, '次级债', 0),
+  (0x5203, '非公开发行公司债', 0),
+  (0x5300, '私募股权类', 0),
+  (0x5400, '衍生品类', 0),
+  (0x5402, '期权', 0),
+  (0x5403, '互换', 0),
+  (0x5406, '远期', 0),
+  (0x5407, '结构化衍生品', 0),
+  (0x5500, '资产支持证券类', 0),
+  (0x5501, '资产支持证券', 0),
+  (0x5600, '私募基金类', 0),
+  (0x5601, '私募股权投资基金', 0),
+  (0x5602, '私募证券投资基金', 0),
+  (0x5700, '收益凭证类', 0),
+  (0x5800, '其他类型', 0);
 
 DELIMITER $
 DROP PROCEDURE IF EXISTS `__AddBaseProdure`; $
