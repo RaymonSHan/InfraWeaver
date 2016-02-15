@@ -112,7 +112,7 @@ CREATE PROCEDURE `GetBaseCertificate` (
   IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256))
 BEGIN
   SELECT
-    IF (valname = BC.valueName, 0, 1) AS result,
+    IF (valname = '' OR valname = BC.valueName, 0, 1) AS result,
     BC.sequPerson
   FROM
     BaseCertificate BC,
@@ -124,6 +124,7 @@ BEGIN
 END; $
 -- STEP 02, create base procedure, Feb. 02 '16
 
+DELIMITER ;
 DROP TABLE IF EXISTS `NaturalPerson`;
 CREATE TABLE `NaturalPerson` (
   `sequPerson` BIGINT NOT NULL,
@@ -156,7 +157,7 @@ CREATE TABLE `SecurityAccount` (
   `sequAccount` BIGINT NOT NULL,
   `idMarket` INT(11) NOT NULL,
   `valueAccount` VARCHAR(32) NOT NULL,
-  `idAccountType` INT(11) NOT NULL,
+  `idAccountType` INT(11) NOT NULL,  -- should delete? Feb. 15 '16
   PRIMARY KEY (`sequAccount`),
   UNIQUE `indexvalAccount` (`valueAccount` ASC, `idMarket` ASC),
   CONSTRAINT `fk_SecurityAccount`
@@ -204,6 +205,7 @@ CREATE TABLE `BaseHolder` (
   `sequPerson` BIGINT NOT NULL,
   `sequCertificate` BIGINT NOT NULL,
   `sequAccount` BIGINT NOT NULL,
+  `idAccountType` INT(11) NOT NULL,    -- add this line in Feb. 15 '16
   PRIMARY KEY (`sequHolder`),
   INDEX `indexPerson` (`sequPerson` ASC),
   INDEX `indexCertificate` (`sequCertificate` ASC),
@@ -273,10 +275,11 @@ BEGIN
   COMMIT;
 END; $
 
-DROP VIEW IF EXISTS `SecurityHolderView`; $
+DELIMITER ;
+DROP VIEW IF EXISTS `SecurityHolderView`;
 CREATE VIEW `SecurityHolderView` AS
   SELECT
-    BC.idCertificate, BC.valueCertificate, BC.valueName,
+    BH.sequHolder, BC.idCertificate, BC.valueCertificate, BC.valueName,
     SA.idMarket, SA.valueAccount, SA.idAccountType
   FROM
     BaseHolder BH, BasePerson BP, BaseCertificate BC, BaseAccount BA,
@@ -301,10 +304,11 @@ CREATE TABLE `PrivateProdure` (
   `valueName` VARCHAR(256) NOT NULL,
   `valueShortname` VARCHAR(32) NULL,
   `valueCode` VARCHAR(32) NOT NULL,
+  `idMarket` INT(11) NOT NULL,
   `sequConsignee` BIGINT NULL COMMENT '承销人',
   `valueNumberLimit` INT(11) UNSIGNED NOT NULL,
   PRIMARY KEY (`sequProdure`),
-  INDEX `indexCode` (`valueCode` ASC),
+  UNIQUE `indexCode` (`idMarket` ASC, `valueCode` ASC),
   INDEX `indexConsignee` (`sequConsignee` ASC),
   CONSTRAINT `fk_PrivateProdure`
     FOREIGN KEY (`sequProdure`)
@@ -317,7 +321,7 @@ DROP VIEW IF EXISTS `PrivateProdureView`;
 CREATE VIEW `PrivateProdureView` AS
   SELECT
     BP.idClass,
-    PP.sequProdure, PP.valueName, PP.valueShortname, PP.valueCode, PP.sequConsignee, PP.valueNumberLimit
+    PP.sequProdure, PP.valueName, PP.valueShortname, PP.valueCode, PP.idMarket, PP.sequConsignee, PP.valueNumberLimit
   FROM
     PrivateProdure PP, BaseProdure BP
   WHERE
@@ -364,14 +368,46 @@ DELIMITER $
 DROP PROCEDURE IF EXISTS `AddPrivateProdure`; $
 CREATE PROCEDURE `AddPrivateProdure` (
   IN idclass INT(11), IN valname VARCHAR(256), IN valshort VARCHAR(32), 
-  IN valcode VARCHAR(32), IN sequconsi BIGINT, IN vallimit INT(11))
+  IN valcode VARCHAR(32), IN idmarket INT(11), IN sequconsi BIGINT, IN vallimit INT(11))
 BEGIN
   SET @sequ = 0;
   CALL __AddBaseProdure(idclass, @sequ);
   INSERT INTO `PrivateProdure` 
-    (`sequProdure`, `valueName`, `valueShortname`, `valueCode`, `sequConsignee`, `valueNumberLimit`)
-    VALUES (@sequ, valname, valshort, valcode, sequconsi, vallimit);
+    (`sequProdure`, `valueName`, `valueShortname`, `valueCode`, `idMarket`, `sequConsignee`, `valueNumberLimit`)
+    VALUES (@sequ, valname, valshort, valcode, idmarket, sequconsi, vallimit);
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END $
 -- STEP 04, first Basic Produre, Feb. 04 '16
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `GetBaseHolder`; $
+CREATE PROCEDURE `GetBaseHolder` (
+  IN sequper BIGINT, IN sequcert BIGINT, IN sequacc BIGINT)
+BEGIN
+  SELECT
+    0, BH.sequHolder
+  FROM
+    BaseHolder BH
+  WHERE
+    BH.sequPerson = sequper AND
+    BH.sequCertificate = sequcert AND
+    BH.sequAccount = sequacc;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `GetPrimaryHolderByCert`; $
+CREATE PROCEDURE `GetPrimaryHolderByCert` (
+  IN idcert INT(11), IN valcert VARCHAR(32), IN idmarket INT(11), IN valname VARCHAR(256))
+BEGIN
+  SELECT
+    IF (valname = '' OR valname = SHV.valueName, 0, 1) AS result,
+    SHV.sequHolder
+  FROM
+    SecurityHolderView SHV
+  WHERE
+    SHV.idCertificate = idcert AND SHV.valueCertificate = valcert AND
+    SHV.idMarket = idmarket AND SHV.idAccountType = 0x400001;
+END; $
+
+DELIMITER ;

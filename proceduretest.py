@@ -12,7 +12,6 @@ if __name__ == '__main__':
 
 
 #### OKED
-#'''
   ## Feb. 02 `16
   vcert = "133322200011223299"
   vname = "王五"
@@ -21,9 +20,11 @@ if __name__ == '__main__':
   print result, sequ
 
   ## Feb. 04 '16
-  #(result, sequ) = infra.AddPrivateProdureSimple("testname", "S00333", 200)
-  #print result, sequ
-#'''
+  (result, sequ) = infra.AddPrivateProdureSimple("testname", "S00333", ID_MARKET_INTEROTC, 200)
+  print result, sequ
+
+  (result, sequ) = infra.GetPrimarySequByIdentity(vcert, ID_MARKET_INTEROTC)
+  print result, sequ
 
 #### REWRITE ONCE, STOPPED Feb. 02 `16
 '''

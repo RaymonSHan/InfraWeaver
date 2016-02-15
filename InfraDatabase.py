@@ -45,7 +45,7 @@ class InfraDatabase(object):
     return result
 
   def ExecuteAdd(self, addproc, addpara):
-    resultset =  self.Execute(addproc, addpara)
+    resultset = self.Execute(addproc, addpara)
     if resultset == None:
       return RESULT_ERR  # first 1 for error in add
     else:
@@ -81,6 +81,11 @@ class InfraDatabase(object):
     paraacc = (idmarket, valaccount, idtype)
     return self.AddHolder("AddNaturalPerson", paraper, "AddIdentityCard", paracert, "AddSecurityAccount", paraacc)
 
-  def AddPrivateProdureSimple(self, valname, valcode, vallimit):
-    addpara = (CLASS_PRIVATE_STOCK, valname, "", valcode, 0, vallimit)
+  def AddPrivateProdureSimple(self, valname, valcode, idmarket, vallimit):
+    addpara = (CLASS_PRIVATE_STOCK, valname, "", valcode, idmarket, 0, vallimit)
     return self.ExecuteAdd("AddPrivateProdure", addpara)
+
+  def GetPrimarySequByIdentity(self, valcert, idmarket):
+    getpara = (ID_CERTIFICATE_CARD, valcert, idmarket, "")
+    return self.ExecuteGet("GetPrimaryHolderByCert", getpara)
+
