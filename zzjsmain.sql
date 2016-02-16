@@ -113,14 +113,12 @@ CREATE PROCEDURE `GetBaseCertificate` (
 BEGIN
   SELECT
     IF (valname = '' OR valname = BC.valueName, 0, 1) AS result,
-    BC.sequPerson
+    BC.sequCertificate
   FROM
-    BaseCertificate BC,
-    BasePerson BP
+    BaseCertificate BC
   WHERE
     BC.idCertificate = idcert AND
-    BC.valueCertificate = valcert AND
-    BC.sequPerson = BP.sequPerson;
+    BC.valueCertificate = valcert;
 END; $
 -- STEP 02, create base procedure, Feb. 02 '16
 
@@ -157,7 +155,7 @@ CREATE TABLE `SecurityAccount` (
   `sequAccount` BIGINT NOT NULL,
   `idMarket` INT(11) NOT NULL,
   `valueAccount` VARCHAR(32) NOT NULL,
-  `idAccountType` INT(11) NOT NULL,  -- should delete? Feb. 15 '16
+  `idAccountType` INT(11) NOT NULL,
   PRIMARY KEY (`sequAccount`),
   UNIQUE `indexvalAccount` (`valueAccount` ASC, `idMarket` ASC),
   CONSTRAINT `fk_SecurityAccount`
@@ -205,7 +203,6 @@ CREATE TABLE `BaseHolder` (
   `sequPerson` BIGINT NOT NULL,
   `sequCertificate` BIGINT NOT NULL,
   `sequAccount` BIGINT NOT NULL,
-  `idAccountType` INT(11) NOT NULL,    -- add this line in Feb. 15 '16
   PRIMARY KEY (`sequHolder`),
   INDEX `indexPerson` (`sequPerson` ASC),
   INDEX `indexCertificate` (`sequCertificate` ASC),
@@ -242,10 +239,10 @@ END $
 DELIMITER $
 DROP PROCEDURE IF EXISTS `AddIdentityCard`; $
 CREATE PROCEDURE `AddIdentityCard` (
-  IN valcert VARCHAR(32), IN valname VARCHAR(256))
+  IN idcert INT(11), IN valcert VARCHAR(32), IN valname VARCHAR(256))
 BEGIN
   SET @sequ = 0;
-  CALL __AddBaseCertificate(0x200001, valcert, valname, @sequ);
+  CALL __AddBaseCertificate(idcert, valcert, valname, @sequ);
   SELECT 0, @sequ;  -- 0 for success
   COMMIT;
 END; $
@@ -393,6 +390,19 @@ BEGIN
     BH.sequPerson = sequper AND
     BH.sequCertificate = sequcert AND
     BH.sequAccount = sequacc;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `GetPersonBySequcert`; $
+CREATE PROCEDURE `GetPersonByCert` (
+  IN sequcert BIGINT)
+BEGIN
+  SELECT
+    0, min(BH.sequPerson) AS sequPerson
+  FROM
+    BaseHolder BH
+  WHERE
+    BH.sequCertificate = sequcert;
 END; $
 
 DELIMITER $

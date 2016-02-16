@@ -16,7 +16,11 @@ if __name__ == '__main__':
   vcert = "133322200011223299"
   vname = "王五"
   vacc = "006225588149"
+  vacc2 = "008225588159"
+
   (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc, ID_MARKET_INTEROTC, ID_TYPE_PRIMARY)
+  print result, sequ
+  (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc2, ID_MARKET_INTEROTC, ID_TYPE_SECONDRY)
   print result, sequ
 
   ## Feb. 04 '16
