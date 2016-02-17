@@ -1,5 +1,6 @@
 
 CREATE SCHEMA `InfraWeaver` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;
+-- execute this line first
 
 DROP TABLE IF EXISTS `SystemClass`;
 CREATE TABLE `SystemClass` (
@@ -394,7 +395,7 @@ END; $
 
 DELIMITER $
 DROP PROCEDURE IF EXISTS `GetPersonBySequcert`; $
-CREATE PROCEDURE `GetPersonByCert` (
+CREATE PROCEDURE `GetPersonBySequcert` (
   IN sequcert BIGINT)
 BEGIN
   SELECT

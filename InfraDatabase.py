@@ -73,10 +73,11 @@ class InfraDatabase(object):
         return RESULT_ERR
     else:
       (resultp, sequper) = self.ExecuteGet("GetPersonBySequcert", (sequcert,))
-      if resultp != 0:
+      if resultp != 0 or sequper == 0:
         return RESULT_ERR
+      print "sequper", sequper
     (resulta, sequacc) = self.ExecuteAdd(procacc, paraacc)
-    if resultc != 0:
+    if resulta != 0:
       return RESULT_ERR
     return self.ExecuteAdd("AddBaseHolder", (sequper, sequcert, sequacc))
 

@@ -10,25 +10,24 @@ if __name__ == '__main__':
   result = 0
   sequ = 0
 
-
 #### OKED
-  ## Feb. 02 `16
   vcert = "133322200011223299"
   vname = "王五"
   vacc = "006225588149"
   vacc2 = "008225588159"
+  vprod = "procname"
+  vcode = "S00333"
 
+  ## Feb. 17 '16
   (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc, ID_MARKET_INTEROTC, ID_TYPE_PRIMARY)
   print result, sequ
   (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc2, ID_MARKET_INTEROTC, ID_TYPE_SECONDRY)
   print result, sequ
-
-  ## Feb. 04 '16
-  (result, sequ) = infra.AddPrivateProdureSimple("testname", "S00333", ID_MARKET_INTEROTC, 200)
+  (result, sequ) = infra.AddPrivateProdureSimple(vprod, vcode, ID_MARKET_INTEROTC, 200)
   print result, sequ
 
-  (result, sequ) = infra.GetPrimarySequByIdentity(vcert, ID_MARKET_INTEROTC)
-  print result, sequ
+  #(result, sequ) = infra.GetPrimarySequByIdentity(vcert, ID_MARKET_INTEROTC)
+  #print result, sequ
 
 #### REWRITE ONCE, STOPPED Feb. 02 `16
 '''
