@@ -277,7 +277,8 @@ DELIMITER ;
 DROP VIEW IF EXISTS `SecurityHolderView`;
 CREATE VIEW `SecurityHolderView` AS
   SELECT
-    BH.sequHolder, BC.idCertificate, BC.valueCertificate, BC.valueName,
+    BH.sequHolder, BH.sequPerson, BH.sequCertificate, BH.sequAccount,
+    BC.idCertificate, BC.valueCertificate, BC.valueName,
     SA.idMarket, SA.valueAccount, SA.idAccountType
   FROM
     BaseHolder BH, BasePerson BP, BaseCertificate BC, BaseAccount BA,
@@ -421,4 +422,86 @@ BEGIN
     SHV.idMarket = idmarket AND SHV.idAccountType = 0x400001;
 END; $
 
+DELIMITER $
+DROP PROCEDURE IF EXISTS `QuerySecurityAccountBySequcert`; $
+CREATE PROCEDURE `QuerySecurityAccountBySequcert` (
+  IN sequcert BIGINT)
+BEGIN
+  SELECT
+    0, min(BH.sequPerson) AS sequPerson
+  FROM
+    BaseHolder BH
+  WHERE
+    BH.sequCertificate = sequcert;
+END; $
+-- STEP 05, first Basic Holder Produre, Feb. 17 '16
+
 DELIMITER ;
+DROP TABLE IF EXISTS `DocumentMain`;
+CREATE TABLE IF NOT EXISTS `DocumentMain` (
+  `sequDocument` BIGINT NOT NULL,
+  `sequUser` BIGINT NOT NULL,
+  `dataInput` TIMESTAMP NOT NULL,
+  `descDocument` VARCHAR(256) NULL,
+  `signedDocument` VARCHAR(32) NULL, -- signed
+  PRIMARY KEY (`sequDocument`),
+  INDEX `indexUser` (`sequUser` ASC),
+  INDEX `indexData` (`dataInput` ASC))
+COMMENT = '凭证主表';
+
+DROP TABLE IF EXISTS `DocumentDetail`;
+CREATE TABLE IF NOT EXISTS `DocumentDetail` (
+  `sequDocument` BIGINT NOT NULL,
+  `orderDocument` INT(11) NOT NULL,
+  `sequHolder` BIGINT NOT NULL,
+  `sequProdure` BIGINT NOT NULL,
+  `tableName` VARCHAR(32) NOT NULL,
+  `fieldName` VARCHAR(32) NOT NULL,
+  `balance` BIGINT NULL DEFAULT 0,
+  UNIQUE `indexDocument` (`sequDocument` ASC, `orderDocument` ASC),
+  INDEX `indexHolder` (`sequHolder` ASC),
+  INDEX `indexProdure` (`sequProdure` ASC))
+COMMENT = '凭证明细表';
+
+DROP TABLE IF EXISTS `ShareBalance`;
+CREATE TABLE IF NOT EXISTS `ShareBalance` (
+  `sequHolder` BIGINT NOT NULL,
+  `sequProdure` BIGINT NOT NULL,
+  `balTotalAmount_D` BIGINT DEFAULT 0,
+  `balTotalAmount_C` BIGINT DEFAULT 0,
+  `balIPO_D` BIGINT DEFAULT 0,
+  `balIPO_C` BIGINT DEFAULT 0,
+  `balTransfer_D` BIGINT DEFAULT 0,
+  `balTransfer_C` BIGINT DEFAULT 0,
+  `balShare_D` BIGINT DEFAULT 0,
+  `balShare_C` BIGINT DEFAULT 0,
+  UNIQUE `indexBalance` (`sequHolder` ASC, `sequProdure` ASC),
+  INDEX `indexHolder` (`sequHolder` ASC),
+  INDEX `indexProdure` (`sequProdure` ASC))
+COMMENT = '股本余额表';
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `__AddDocumentDetail`; $
+CREATE PROCEDURE `__AddDocumentDetail` (
+  IN sequcert BIGINT)
+BEGIN
+  SELECT
+    0, min(BH.sequPerson) AS sequPerson
+  FROM
+    BaseHolder BH
+  WHERE
+    BH.sequCertificate = sequcert;
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `tt1`; $
+CREATE PROCEDURE `tt1` (
+  IN tname VARCHAR(32))
+BEGIN
+  declare v_sql varchar(500);
+  set v_sql= concat('Select * From ', tname);
+  set @v_sql=v_sql;
+  prepare stmt from @v_sql;
+  EXECUTE stmt;
+  deallocate prepare stmt;
+END

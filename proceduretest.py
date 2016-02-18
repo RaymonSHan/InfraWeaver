@@ -4,20 +4,25 @@ import string
 from InfraCommon import *
 from InfraDatabase import InfraDatabase
 
+vcert = "133322200011223299"
+vname = "王五"
+vacc = "006225588149"
+vacc2 = "008225588159"
+vprod = "procname"
+vcode = "S00333"
+
 if __name__ == '__main__':
 #  infra = InfraDatabase('root', 'root', '127.0.0.1')
   infra = InfraDatabase('root', '', '192.168.206.139')
   result = 0
   sequ = 0
 
-#### OKED
-  vcert = "133322200011223299"
-  vname = "王五"
-  vacc = "006225588149"
-  vacc2 = "008225588159"
-  vprod = "procname"
-  vcode = "S00333"
+  qresult = infra.Query("tt1", ("BasePerson",))
+  print qresult
 
+
+#### OKED
+if __name__ == '__OK__':
   ## Feb. 17 '16
   (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc, ID_MARKET_INTEROTC, ID_TYPE_PRIMARY)
   print result, sequ
@@ -26,9 +31,8 @@ if __name__ == '__main__':
   (result, sequ) = infra.AddPrivateProdureSimple(vprod, vcode, ID_MARKET_INTEROTC, 200)
   print result, sequ
 
-  #(result, sequ) = infra.GetPrimarySequByIdentity(vcert, ID_MARKET_INTEROTC)
-  #print result, sequ
-
+  (result, sequ) = infra.GetPrimaryHolderByIdentity(vcert, ID_MARKET_INTEROTC)
+  print result, sequ
 #### REWRITE ONCE, STOPPED Feb. 02 `16
 '''
   vcert = "113322200011223255"

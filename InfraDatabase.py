@@ -83,7 +83,7 @@ class InfraDatabase(object):
 
   def AddAccountByIdentity(self, valcert, valname, valaccount, idmarket, idtype):
     paraper = AnalyzePersonIdentity(valcert, valname)
-    paracert = (0x200001, valcert, valname)
+    paracert = (ID_CERTIFICATE_CARD, valcert, valname)
     paraacc = (idmarket, valaccount, idtype)
     return self.AddHolder("AddNaturalPerson", paraper, "AddIdentityCard", paracert, "AddSecurityAccount", paraacc)
 
@@ -91,7 +91,7 @@ class InfraDatabase(object):
     addpara = (CLASS_PRIVATE_STOCK, valname, "", valcode, idmarket, 0, vallimit)
     return self.ExecuteAdd("AddPrivateProdure", addpara)
 
-  def GetPrimarySequByIdentity(self, valcert, idmarket):
+  def GetPrimaryHolderByIdentity(self, valcert, idmarket):
     getpara = (ID_CERTIFICATE_CARD, valcert, idmarket, "")
     return self.ExecuteGet("GetPrimaryHolderByCert", getpara)
 
