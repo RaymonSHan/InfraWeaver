@@ -481,27 +481,50 @@ CREATE TABLE IF NOT EXISTS `ShareBalance` (
 COMMENT = '股本余额表';
 
 DELIMITER $
-DROP PROCEDURE IF EXISTS `__AddDocumentDetail`; $
-CREATE PROCEDURE `__AddDocumentDetail` (
-  IN sequcert BIGINT)
+DROP PROCEDURE IF EXISTS `GetBalance`; $
+CREATE PROCEDURE `GetBalance` (
+  IN sequhold BIGINT, IN sequprod BIGINT,
+  IN tabname VARCHAR(32), IN fiename VARCHAR(32))
 BEGIN
-  SELECT
-    0, min(BH.sequPerson) AS sequPerson
-  FROM
-    BaseHolder BH
-  WHERE
-    BH.sequCertificate = sequcert;
-END; $
-
-DELIMITER $
-DROP PROCEDURE IF EXISTS `tt1`; $
-CREATE PROCEDURE `tt1` (
-  IN tname VARCHAR(32))
-BEGIN
-  declare v_sql varchar(500);
-  set v_sql= concat('Select * From ', tname);
-  set @v_sql=v_sql;
+  DECLARE v_sql VARCHAR(500);
+  SET v_sql = concat('SELECT 0, ',fiename,' FROM ',tabname,' WHERE ',
+    'sequHolder = ',sequhold,' AND sequProdure=',sequprod,';');
+  SET @v_sql=v_sql;
   prepare stmt from @v_sql;
   EXECUTE stmt;
   deallocate prepare stmt;
-END
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `AddDocumentMain`; $
+CREATE PROCEDURE `AddDocumentMain` (
+  IN sequuser BIGINT, IN descdoc VARCHAR(256), IN signdoc VARCHAR(32))
+BEGIN
+  SET @sequ = 0;
+  INSERT INTO `DocumentMain` (`sequDocument`, `sequUser`, `dataInput`, `descDocument`, `signedDocument`)
+    VALUES (@sequ, sequuser, now(), descdoc, signdoc);
+  COMMIT;
+  SELECT 0, @sequ;  -- 0 for success
+END; $
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `ReplaceDocumentDetail`; $
+CREATE PROCEDURE `ReplaceDocumentDetail` (
+  IN sequdocu BIGINT, IN orderdocu INT(11), IN sequhold BIGINT, IN sequprod BIGINT,
+  IN tabname VARCHAR(32), IN fiename VARCHAR(32), IN deltabal BIGINT, IN oldbal BIGINT)
+BEGIN
+  DECLARE v_sql VARCHAR(1000);
+  INSERT INTO `DocumentDetail`
+    (`sequDocument`, `orderDocument`, `sequHolder`, `sequProdure`, `tableName`, `fieldName`, `balance`)
+    VALUES (sequdocu, orderdocu, sequhold, sequprod, tabname, fiename, deltabal);
+  SET v_sql = concat('REPLACE INTO ',tabname,'(sequHolder, sequProdure,',fiename,') VALUES ',
+    '(',sequhold,',',sequprod,',',deltabal+oldbal,');');
+  SET @v_sql=v_sql;
+  PREPARE stmt FROM @v_sql;
+  EXECUTE stmt;
+  DEALLOCATE PREPARE stmt;
+  COMMIT;
+  SELECT 0, 0;
+END; $
+
+DELIMITER ;

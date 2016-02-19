@@ -17,9 +17,18 @@ if __name__ == '__main__':
   result = 0
   sequ = 0
 
-  qresult = infra.Query("tt1", ("BasePerson",))
-  print qresult
+  sequdoc = 100
+  orderdoc = 2
+  sequhold = 4444
+  sequprod = 5555
+  tabname = "ShareBalance"
+  fiename = "balTotalAmount_D"
+  deltabal = 3300
+  bal = 300
+  detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal)
+  resultdetail = infra.Execute("ReplaceDocumentDetail", detailpara)
 
+  print resultdetail
 
 #### OKED
 if __name__ == '__OK__':

@@ -95,3 +95,19 @@ class InfraDatabase(object):
     getpara = (ID_CERTIFICATE_CARD, valcert, idmarket, "")
     return self.ExecuteGet("GetPrimaryHolderByCert", getpara)
 
+
+  def AddOneDocument(self, sequuser, descdoc, signdoc, docdetails):
+    addpara = (sequuser, descdoc, signdoc)
+    (result, sequdoc) = self.ExecuteAdd("AddDocumentMain", addpara)
+    if sequdoc == 0:
+      return RESULT_ERR
+    orderdoc = 0
+    for onedetail in docdetails:
+      (sequhold, sequprod, tabname, fiename, deltabal) = onedetail
+      getpara = (sequhold, sequprod, tabname, fiename)
+      (result, bal) = self.ExecuteGet("GetBalance", getpara)
+      detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal)
+      resultdetail = self.Execute("ReplaceDocumentDetail", detailpara)
+      if resultdetail == None:
+        return RESULT_ERR
+      orderdoc += 1
