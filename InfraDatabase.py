@@ -105,8 +105,14 @@ class InfraDatabase(object):
     for onedetail in docdetails:
       (sequhold, sequprod, tabname, fiename, deltabal) = onedetail
       getpara = (sequhold, sequprod, tabname, fiename)
-      (result, bal) = self.ExecuteGet("GetBalance", getpara)
-      detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal)
+      result = self.Execute("GetBalance", getpara)
+      if result == None:
+        bal = 0
+        isnew = 1
+      else:
+        (resultget, bal) = result
+        isnew = 0
+      detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal, isnew)
       resultdetail = self.Execute("ReplaceDocumentDetail", detailpara)
       if resultdetail == None:
         return RESULT_ERR

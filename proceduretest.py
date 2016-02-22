@@ -19,29 +19,29 @@ if __name__ == '__main__':
 
   sequdoc = 100
   orderdoc = 2
-  sequhold = 4444
-  sequprod = 5555
+  sequhold = 4444123456789
+  sequprod = 5555999
+  sequuser = 66666
   tabname = "ShareBalance"
   fiename = "balTotalAmount_D"
+  fiename2 = "balIPO_C"
   deltabal = 3300
   bal = 300
-  detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal)
-  resultdetail = infra.Execute("ReplaceDocumentDetail", detailpara)
 
-  print resultdetail
+  onedetail1 = (sequhold, sequprod, tabname, fiename, deltabal)
+  onedetail2 = (sequhold, sequprod, tabname, fiename2, deltabal)
+  result = infra.AddOneDocument(sequuser, "descDOC", "signDOC", [onedetail1, onedetail2])
 
 #### OKED
 if __name__ == '__OK__':
   ## Feb. 17 '16
   (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc, ID_MARKET_INTEROTC, ID_TYPE_PRIMARY)
-  print result, sequ
   (result, sequ) = infra.AddAccountByIdentity(vcert, vname, vacc2, ID_MARKET_INTEROTC, ID_TYPE_SECONDRY)
-  print result, sequ
   (result, sequ) = infra.AddPrivateProdureSimple(vprod, vcode, ID_MARKET_INTEROTC, 200)
-  print result, sequ
-
   (result, sequ) = infra.GetPrimaryHolderByIdentity(vcert, ID_MARKET_INTEROTC)
-  print result, sequ
+
+  detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal)
+  resultdetail = infra.Execute("ReplaceDocumentDetail", detailpara)
 #### REWRITE ONCE, STOPPED Feb. 02 `16
 '''
   vcert = "113322200011223255"

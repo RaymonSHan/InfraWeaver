@@ -500,7 +500,7 @@ DROP PROCEDURE IF EXISTS `AddDocumentMain`; $
 CREATE PROCEDURE `AddDocumentMain` (
   IN sequuser BIGINT, IN descdoc VARCHAR(256), IN signdoc VARCHAR(32))
 BEGIN
-  SET @sequ = 0;
+  SET @sequ = uuid_short();
   INSERT INTO `DocumentMain` (`sequDocument`, `sequUser`, `dataInput`, `descDocument`, `signedDocument`)
     VALUES (@sequ, sequuser, now(), descdoc, signdoc);
   COMMIT;
@@ -511,14 +511,20 @@ DELIMITER $
 DROP PROCEDURE IF EXISTS `ReplaceDocumentDetail`; $
 CREATE PROCEDURE `ReplaceDocumentDetail` (
   IN sequdocu BIGINT, IN orderdocu INT(11), IN sequhold BIGINT, IN sequprod BIGINT,
-  IN tabname VARCHAR(32), IN fiename VARCHAR(32), IN deltabal BIGINT, IN oldbal BIGINT)
+  IN tabname VARCHAR(32), IN fiename VARCHAR(32), IN deltabal BIGINT, IN oldbal BIGINT,
+  IN isnew INT(11))
 BEGIN
   DECLARE v_sql VARCHAR(1000);
   INSERT INTO `DocumentDetail`
     (`sequDocument`, `orderDocument`, `sequHolder`, `sequProdure`, `tableName`, `fieldName`, `balance`)
     VALUES (sequdocu, orderdocu, sequhold, sequprod, tabname, fiename, deltabal);
-  SET v_sql = concat('REPLACE INTO ',tabname,'(sequHolder, sequProdure,',fiename,') VALUES ',
-    '(',sequhold,',',sequprod,',',deltabal+oldbal,');');
+  IF isnew = 1 THEN 
+    SET v_sql = concat('INSERT INTO ',tabname,'(sequHolder, sequProdure,',fiename,') VALUES ',
+      '(',sequhold,',',sequprod,',',deltabal+oldbal,');');
+  ELSE
+    SET v_sql = concat('UPDATE ',tabname,' SET ',fiename,'=',deltabal+oldbal,
+      ' WHERE sequHolder=',sequhold,' AND sequProdure=',sequprod,';');
+  END IF;
   SET @v_sql=v_sql;
   PREPARE stmt FROM @v_sql;
   EXECUTE stmt;
@@ -526,5 +532,5 @@ BEGIN
   COMMIT;
   SELECT 0, 0;
 END; $
-
+-- STEP 06, Basic GL, Feb. 22 '16
 DELIMITER ;
