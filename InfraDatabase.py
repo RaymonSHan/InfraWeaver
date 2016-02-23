@@ -17,12 +17,12 @@ class InfraDatabase(object):
     except Exception as e:
       print(e)
 
-  def GetCursor(self):
+  def __GetCursor(self):
     return self.ConnectSQL.cursor()
-  def Execute(self, procedure, parameter):
+  def __Execute(self, procedure, parameter):
     try:
       result = None
-      executecursor = self.GetCursor()
+      executecursor = self.__GetCursor()
       executecursor.callproc(procedure, parameter)
       for executeresult in executecursor.stored_results():
         result = executeresult.fetchone()
@@ -31,9 +31,9 @@ class InfraDatabase(object):
     finally:
       executecursor.close()
     return result
-  def Query(self, procedure, parameter):
+  def __Query(self, procedure, parameter):
     try:
-      executecursor = self.GetCursor()
+      executecursor = self.__GetCursor()
       executecursor.callproc(procedure, parameter)
       result = []
       for executeresult in executecursor.stored_results():
@@ -44,68 +44,71 @@ class InfraDatabase(object):
       executecursor.close()
     return result
 
-  def ExecuteAdd(self, addproc, addpara):
-    resultset = self.Execute(addproc, addpara)
+  def __ExecuteAdd(self, addproc, addpara):
+    resultset = self.__Execute(addproc, addpara)
     if resultset == None:
       return RESULT_ERR  # first 1 for error in add
     else:
       return resultset
-  def ExecuteGet(self, getproc, getpara):
-    resultset = self.Execute(getproc, getpara)
+  def __ExecuteGet(self, getproc, getpara):
+    resultset = self.__Execute(getproc, getpara)
     if resultset == None:
       return RESULT_NOTFOUND  # first 0 for success, second 0 for not found
     else:
       return resultset
-  def ExecuteReturn(self, getproc, getpara, addproc, addpara):
-    (result, returnid) = self.ExecuteGet(getproc, getpara)
+  def __ExecuteReturn(self, getproc, getpara, addproc, addpara):
+    (result, returnid) = self.__ExecuteGet(getproc, getpara)
     if result == 0 and returnid == 0:
-      (result, returnid) = self.ExecuteAdd(addproc, addpara)
+      (result, returnid) = self.__ExecuteAdd(addproc, addpara)
     return (result, returnid)
 
-  def AddHolder(self, procper, paraper, proccert, paracert, procacc, paraacc):
-    (resultc, sequcert) = self.ExecuteGet("GetBaseCertificate", paracert)
+  def __AddHolder(self, procper, paraper, proccert, paracert, procacc, paraacc):
+    (resultc, sequcert) = self.__ExecuteGet("GetBaseCertificate", paracert)
     if sequcert == 0:
-      (resultc, sequcert) = self.ExecuteAdd(proccert, paracert)
+      (resultc, sequcert) = self.__ExecuteAdd(proccert, paracert)
       if resultc != 0:
         return RESULT_ERR
-      (resultp, sequper) = self.ExecuteAdd(procper, paraper)
+      (resultp, sequper) = self.__ExecuteAdd(procper, paraper)
       if resultp != 0:
         return RESULT_ERR
     else:
-      (resultp, sequper) = self.ExecuteGet("GetPersonBySequcert", (sequcert,))
+      (resultp, sequper) = self.__ExecuteGet("GetPersonBySequcert", (sequcert,))
       if resultp != 0 or sequper == 0:
         return RESULT_ERR
       print "sequper", sequper
-    (resulta, sequacc) = self.ExecuteAdd(procacc, paraacc)
+    (resulta, sequacc) = self.__ExecuteAdd(procacc, paraacc)
     if resulta != 0:
       return RESULT_ERR
-    return self.ExecuteAdd("AddBaseHolder", (sequper, sequcert, sequacc))
+    return self.__ExecuteAdd("AddBaseHolder", (sequper, sequcert, sequacc))
 
   def AddAccountByIdentity(self, valcert, valname, valaccount, idmarket, idtype):
     paraper = AnalyzePersonIdentity(valcert, valname)
     paracert = (ID_CERTIFICATE_CARD, valcert, valname)
     paraacc = (idmarket, valaccount, idtype)
-    return self.AddHolder("AddNaturalPerson", paraper, "AddIdentityCard", paracert, "AddSecurityAccount", paraacc)
-
-  def AddPrivateProdureSimple(self, valname, valcode, idmarket, vallimit):
-    addpara = (CLASS_PRIVATE_STOCK, valname, "", valcode, idmarket, 0, vallimit)
-    return self.ExecuteAdd("AddPrivateProdure", addpara)
+    return self.__AddHolder("AddNaturalPerson", paraper, "AddIdentityCard", paracert, "AddSecurityAccount", paraacc)
 
   def GetPrimaryHolderByIdentity(self, valcert, idmarket):
     getpara = (ID_CERTIFICATE_CARD, valcert, idmarket, "")
-    return self.ExecuteGet("GetPrimaryHolderByCert", getpara)
+    return self.__ExecuteGet("GetPrimaryHolderByCert", getpara)
 
+  def AddPrivateProdureSimple(self, valname, valcode, idmarket, vallimit):
+    addpara = (CLASS_PRIVATE_STOCK, valname, "", valcode, idmarket, 0, vallimit)
+    return self.__ExecuteAdd("AddPrivateProdure", addpara)
+
+  def GetPrivateProdure(self, valcode, idmarket):
+    getpara = (idmarket, valcode)
+    return self.__ExecuteGet("GetPrivateProdure", getpara)
 
   def AddOneDocument(self, sequuser, descdoc, signdoc, docdetails):
     addpara = (sequuser, descdoc, signdoc)
-    (result, sequdoc) = self.ExecuteAdd("AddDocumentMain", addpara)
+    (result, sequdoc) = self.__ExecuteAdd("AddDocumentMain", addpara)
     if sequdoc == 0:
       return RESULT_ERR
     orderdoc = 0
     for onedetail in docdetails:
       (sequhold, sequprod, tabname, fiename, deltabal) = onedetail
       getpara = (sequhold, sequprod, tabname, fiename)
-      result = self.Execute("GetBalance", getpara)
+      result = self.__Execute("GetBalance", getpara)
       if result == None:
         bal = 0
         isnew = 1
@@ -113,7 +116,19 @@ class InfraDatabase(object):
         (resultget, bal) = result
         isnew = 0
       detailpara = (sequdoc, orderdoc, sequhold, sequprod, tabname, fiename, deltabal, bal, isnew)
-      resultdetail = self.Execute("ReplaceDocumentDetail", detailpara)
+      resultdetail = self.__Execute("ReplaceDocumentDetail", detailpara)
       if resultdetail == None:
         return RESULT_ERR
       orderdoc += 1
+
+################################################################################
+
+  def PrivateProdureRegister(self, sequuser, descdoc, valcode, idmarket, balance):
+    (result, sequprod) = self.GetPrivateProdure(valcode, idmarket)
+    if sequprod == 0:
+        return RESULT_ERR
+    detaild = (SEQU_HOLDER_DEFAULT, sequprod, TABLE_SHAREBALANCE, FIELD_TOTALAMOUNT + "_D", balance)
+    detailc = (SEQU_HOLDER_DEFAULT, sequprod, TABLE_SHAREBALANCE, FIELD_IPO + "_C", balance)
+    signdoc = "SIGNDOC"
+    return self.AddOneDocument(sequuser, descdoc, signdoc, [detaild, detailc])
+

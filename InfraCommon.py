@@ -31,6 +31,14 @@ ID_TYPE_NOMINAL                 = 0x401003
 RESULT_NOTFOUND                 = (0, 0)
 RESULT_ERR                      = (1, 0)
 
+################################################################################
+
+SEQU_HOLDER_DEFAULT             = 0xEA000001
+
+TABLE_SHAREBALANCE              = "ShareBalance"
+FIELD_TOTALAMOUNT               = "balTotalAmount"
+FIELD_IPO                       = "balIPO"
+
 def AnalyzePersonIdentity(valcert, valname):
   if string.atoi(valcert[16:17]) % 2 == 0:
     valsex = ID_SEX_FEMALE

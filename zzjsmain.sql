@@ -533,4 +533,19 @@ BEGIN
   SELECT 0, 0;
 END; $
 -- STEP 06, Basic GL, Feb. 22 '16
+
+DELIMITER $
+DROP PROCEDURE IF EXISTS `GetPrivateProdure`; $
+CREATE PROCEDURE `GetPrivateProdure` (
+  IN idmarket INT(11), IN valcode VARCHAR(32))
+BEGIN
+  SELECT
+    0, PP.sequProdure
+  FROM
+    PrivateProdure PP
+  WHERE
+    PP.idMarket = idmarket AND
+    PP.valueCode = valcode;
+END; $
+
 DELIMITER ;
